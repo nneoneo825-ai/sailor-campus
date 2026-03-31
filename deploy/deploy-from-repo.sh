@@ -139,8 +139,8 @@ if [ -f "${TEMP_DIR}/package.json" ]; then
     cd "${TEMP_DIR}"
     npm ci --production=false 2>/dev/null || npm install
 
-    log_info "构建前端..."
-    npm run build
+    log_info "构建前端 (生产模式)..."
+    npm run build -- --mode production
 
     # 备份旧版本
     if [ -d "${FRONTEND_DIR}/dist" ]; then
