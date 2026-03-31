@@ -65,11 +65,26 @@ systemctl start mysqld
 
 # 创建数据库和用户
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-nanpuqing666}"
-mysql -u root <<EOF
+
+# 尝试无密码连接，失败则使用密码连接
+if mysql -u root -e "SELECT 1" &>/dev/null; then
+    log_info "MySQL 无密码连接成功"
+    mysql -u root <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 CREATE DATABASE IF NOT EXISTS sailor_campus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 FLUSH PRIVILEGES;
 EOF
+elif mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SELECT 1" &>/dev/null; then
+    log_info "MySQL 密码连接成功，数据库已存在，跳过初始化"
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<EOF
+CREATE DATABASE IF NOT EXISTS sailor_campus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+FLUSH PRIVILEGES;
+EOF
+else
+    log_warn "MySQL 连接失败，请手动配置数据库"
+    log_warn "尝试: mysql -u root -p"
+    log_warn "然后执行: CREATE DATABASE sailor_campus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+fi
 
 log_info "MySQL 配置完成 (数据库: sailor_campus)"
 
