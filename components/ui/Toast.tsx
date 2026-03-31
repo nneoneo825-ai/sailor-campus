@@ -11,8 +11,15 @@ interface ToastItem {
   closing?: boolean;
 }
 
+interface ToastNamespace {
+  success: (title: string, message?: string) => void;
+  error: (title: string, message?: string) => void;
+  warning: (title: string, message?: string) => void;
+  info: (title: string, message?: string) => void;
+}
+
 interface ToastContextType {
-  toast: (title: string, options?: { type?: ToastType; message?: string; duration?: number }) => void;
+  toast: ToastNamespace;
   success: (title: string, message?: string) => void;
   error: (title: string, message?: string) => void;
   warning: (title: string, message?: string) => void;
@@ -132,12 +139,17 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts(prev => [...prev, item]);
   }, []);
 
+  const success = useCallback((title: string, message?: string) => addToast(title, { type: 'success', message }), [addToast]);
+  const error = useCallback((title: string, message?: string) => addToast(title, { type: 'error', message }), [addToast]);
+  const warning = useCallback((title: string, message?: string) => addToast(title, { type: 'warning', message }), [addToast]);
+  const info = useCallback((title: string, message?: string) => addToast(title, { type: 'info', message }), [addToast]);
+
   const ctx: ToastContextType = {
-    toast: addToast,
-    success: useCallback((title: string, message?: string) => addToast(title, { type: 'success', message }), [addToast]),
-    error: useCallback((title: string, message?: string) => addToast(title, { type: 'error', message }), [addToast]),
-    warning: useCallback((title: string, message?: string) => addToast(title, { type: 'warning', message }), [addToast]),
-    info: useCallback((title: string, message?: string) => addToast(title, { type: 'info', message }), [addToast]),
+    toast: { success, error, warning, info },
+    success,
+    error,
+    warning,
+    info,
   };
 
   return (

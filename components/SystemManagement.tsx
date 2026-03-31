@@ -573,6 +573,7 @@ const UserManagementTab = () => {
       .filter((id): id is number => id !== undefined);
 
     try {
+      setLoading(true);
       if (editingId) {
         // 更新用户
         await api.put(`/api/users/${editingId}`, {
@@ -598,6 +599,8 @@ const UserManagementTab = () => {
       toast.success(editingId ? '用户更新成功' : '用户创建成功。默认密码为 111111，用户首次登录时需修改密码。');
     } catch (err: any) {
       toast.error(`保存失败: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1064,9 +1067,10 @@ const UserManagementTab = () => {
               </button>
               <button 
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                保存
+                {loading ? '保存中...' : '保存'}
               </button>
             </div>
           </div>
@@ -1245,6 +1249,7 @@ const MoralIndicatorsTab = () => {
     }
 
     try {
+      setLoading(true);
       if (editingId) {
         await api.put(`/api/moral/indicators/${editingId}`, requestBody);
       } else {
@@ -1252,11 +1257,14 @@ const MoralIndicatorsTab = () => {
       }
       setIsModalOpen(false);
       await loadIndicators();
+      toast.success(editingId ? '德育指标更新成功' : '德育指标创建成功');
     } catch (err: any) {
       // 显示详细的验证错误信息
       const errorDetail = err.response?.data?.detail || err.message;
       console.error('保存德育指标失败:', err.response?.data);
       toast.error(`保存失败: ${JSON.stringify(errorDetail)}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1579,9 +1587,10 @@ const MoralIndicatorsTab = () => {
               </button>
               <button 
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                保存
+                {loading ? '保存中...' : '保存'}
               </button>
             </div>
           </div>
@@ -1742,6 +1751,7 @@ const TeachingIndicatorsTab = () => {
     }
 
     try {
+      setLoading(true);
       if (editingId) {
         await api.put(`/api/moral/teaching-indicators/${editingId}`, requestBody);
       } else {
@@ -1749,8 +1759,11 @@ const TeachingIndicatorsTab = () => {
       }
       setIsModalOpen(false);
       await loadIndicators();
+      toast.success(editingId ? '教学指标更新成功' : '教学指标创建成功');
     } catch (err: any) {
-      toast.error(`保存失败: ${err.message}`);
+      toast.error(`保存失败: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2059,9 +2072,10 @@ const TeachingIndicatorsTab = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                保存
+                {loading ? '保存中...' : '保存'}
               </button>
             </div>
           </div>

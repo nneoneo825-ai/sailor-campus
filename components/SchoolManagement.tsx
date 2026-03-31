@@ -1841,6 +1841,7 @@ const ClassList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) =>
         if (!editForm) return;
 
         try {
+            setLoading(true);
             if (useApiData && currentSchoolId) {
                 // 调用API保存班级信息
                 const classId = parseInt(editForm.id);
@@ -1885,8 +1886,12 @@ const ClassList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) =>
                 // 构建请求数据
                 const requestData: any = {
                     head_teacher: headTeacherName,
-                    teachers: teachersData  // 始终发送 teachers 字段，即使是空对象（表示清空所有教师）
                 };
+
+                // 只在有教师数据时才发送 teachers 字段（避免清空已有教师）
+                if (editForm.teachers && Object.keys(editForm.teachers).length > 0) {
+                    requestData.teachers = teachersData;
+                }
 
                 console.log('[DEBUG] Final request data:', requestData);
 
@@ -1929,7 +1934,9 @@ const ClassList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) =>
         } catch (err: any) {
             console.error('保存班级信息失败:', err);
             const errorMsg = err.response?.data?.detail || err.message || '保存失败';
-      toast.error(errorMsg);
+            toast.error(errorMsg);
+        } finally {
+            setLoading(false);
         }
     };
     
@@ -2924,9 +2931,10 @@ const ClassList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) =>
                         </button>
                         <button
                             onClick={handleSave}
-                            className="rounded-md bg-blue-500 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-600 focus:outline-none shadow-sm transition-colors"
+                            disabled={loading}
+                            className="rounded-md bg-blue-500 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-600 focus:outline-none shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            保存
+                            {loading ? '保存中...' : '保存'}
                         </button>
                     </div>
                 </div>
@@ -5742,36 +5750,41 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
   const handleSave = async () => {
     if (!editForm) return;
     
-    try {
-      if (useApiData) {
-        // 调用API保存学生信息
-        const studentData = {
-          name: editForm.name,
-          gender: editForm.gender === '男' ? 'M' : editForm.gender === '女' ? 'F' : 'M',
-          dorm_building: editForm.building,
-          dorm_floor: editForm.floor,
-          dorm_room: editForm.dorm,
-          bed_no: editForm.bedNo
-        };
-        
-        await api.put(`/api/students/${editForm.id}`, studentData);
-        toast.success('学生信息保存成功！');
-        // 重新加载学生列表
-        await loadStudentsFromApi();
-      } else {
-        // Mock模式：直接更新本地状态
-        setStudents(students.map(s => s.id === editForm.id ? editForm : s));
-        toast.success('学生信息保存成功！');
-      }
-      
-      setView('list');
-      setEditForm(null);
-    } catch (err: any) {
-      console.error('保存学生信息失败:', err);
-      const errorMsg = err.response?.data?.detail || err.message || '保存失败';
-      toast.error(errorMsg);
-    }
-  };
+        try {
+            setLoading(true);
+            if (useApiData) {
+                // 调用API保存学生信息
+                const studentData: any = {
+                  name: editForm.name,
+                  gender: editForm.gender === '男' ? 'M' : editForm.gender === '女' ? 'F' : 'M',
+                };
+                
+                // 只在有值时才发送宿舍相关字段，避免覆盖为空值
+                if (editForm.building) studentData.dorm_building = editForm.building;
+                if (editForm.floor != null && editForm.floor !== 0) studentData.dorm_floor = editForm.floor;
+                if (editForm.dorm) studentData.dorm_room = editForm.dorm;
+                if (editForm.bedNo != null && editForm.bedNo !== 0) studentData.bed_no = editForm.bedNo;
+                
+                await api.put(`/api/students/${editForm.id}`, studentData);
+                toast.success('学生信息保存成功！');
+                // 重新加载学生列表
+                await loadStudentsFromApi();
+            } else {
+                // Mock模式：直接更新本地状态
+                setStudents(students.map(s => s.id === editForm.id ? editForm : s));
+                toast.success('学生信息保存成功！');
+            }
+            
+            setView('list');
+            setEditForm(null);
+        } catch (err: any) {
+            console.error('保存学生信息失败:', err);
+            const errorMsg = err.response?.data?.detail || err.message || '保存失败';
+            toast.error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
 
   // 保存新增学生
   const handleAddSave = async () => {

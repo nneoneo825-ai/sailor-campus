@@ -1905,6 +1905,11 @@ const GradeReport: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<GradeReportData | null>(null);
     const [dataError, setDataError] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    // 评价内容状态
+    const [evaluation, setEvaluation] = useState<string>('');
+    const [savingEvaluation, setSavingEvaluation] = useState(false);
     
     // 筛选状态
     const [filters, setFilters] = useState({
@@ -2513,6 +2518,30 @@ const GradeReport: React.FC = () => {
         );
     }
 
+    // 保存评价
+    const handleSaveEvaluation = async () => {
+        const gradeId = getGradeIdByName(filters.school, filters.grade);
+        if (!gradeId || !filters.dateRange.start || !filters.dateRange.end) return;
+
+        try {
+            setSavingEvaluation(true);
+            await api.post('/api/moral/reports/grade/evaluation', null, {
+                params: {
+                    grade_id: gradeId,
+                    start_date: filters.dateRange.start,
+                    end_date: filters.dateRange.end,
+                    evaluation
+                }
+            });
+            toast.success('评价保存成功');
+        } catch (error) {
+            console.error('Failed to save evaluation:', error);
+            toast.error('评价保存失败');
+        } finally {
+            setSavingEvaluation(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header/Filter - 参考教学管理模块优化 */}
@@ -2687,16 +2716,25 @@ const GradeReport: React.FC = () => {
                 </div>
 
                 <div className="relative">
-                    <textarea 
+                    <textarea
                         className="w-full h-32 p-3 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="请输入德育方面的分析评价..."
+                        value={evaluation}
+                        onChange={(e) => setEvaluation(e.target.value.slice(0, 2000))}
+                        maxLength={2000}
                     ></textarea>
                     <div className="absolute bottom-2 right-2 text-xs text-slate-400">提示：最多输入2000字</div>
                 </div>
 
                 {hasPermission('moral:edit') && (
                     <div>
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">保存德育评价</button>
+                        <button
+                            onClick={handleSaveEvaluation}
+                            disabled={savingEvaluation}
+                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {savingEvaluation ? '保存中...' : '保存德育评价'}
+                        </button>
                     </div>
                 )}
             </div>
@@ -2706,14 +2744,16 @@ const GradeReport: React.FC = () => {
 
 // 3. School Report Component - 使用 API 数据
 const SchoolReport: React.FC = () => {
-    // ... (Use existing code for SchoolReport if needed, but the user didn't ask to change it specifically, just DistrictReport)
-    // To save tokens, I'll just include the necessary parts for the file update.
-    // Assuming the user wants the FULL file content to be valid, I need to include SchoolReport and DormReport.
-    // I'll copy them from the original file content provided in the prompt.
     const [analysisType, setAnalysisType] = useState('德育');
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<SchoolReportData | null>(null);
     const [dataError, setDataError] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    // 评价内容状态
+    const [evaluation, setEvaluation] = useState<string>('');
+    const [savingEvaluation, setSavingEvaluation] = useState(false);
+
     const [filters, setFilters] = useState({
         school: '',
         dateRange: getBeijingWeekRange(),
@@ -3193,6 +3233,30 @@ const SchoolReport: React.FC = () => {
         );
     }
 
+    // 保存评价
+    const handleSaveEvaluation = async () => {
+        const schoolId = getSelectedSchoolId();
+        if (!schoolId || !filters.dateRange.start || !filters.dateRange.end) return;
+
+        try {
+            setSavingEvaluation(true);
+            await api.post('/api/moral/reports/school/evaluation', null, {
+                params: {
+                    school_id: schoolId,
+                    start_date: filters.dateRange.start,
+                    end_date: filters.dateRange.end,
+                    evaluation
+                }
+            });
+            toast.success('评价保存成功');
+        } catch (error) {
+            console.error('Failed to save evaluation:', error);
+            toast.error('评价保存失败');
+        } finally {
+            setSavingEvaluation(false);
+        }
+    };
+
     // Summary View
     return (
        <div className="space-y-6">
@@ -3353,17 +3417,24 @@ const SchoolReport: React.FC = () => {
               </div>
               
               <div className="relative">
-                  <textarea 
+                  <textarea
                       className="w-full h-32 p-4 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
                       placeholder={`请输入${analysisType}方面的分析评价...`}
+                      value={evaluation}
+                      onChange={(e) => setEvaluation(e.target.value.slice(0, 2000))}
+                      maxLength={2000}
                   ></textarea>
                   <div className="absolute bottom-3 right-3 text-xs text-slate-400">提示: 最多输入2000字</div>
               </div>
   
               {hasPermission('moral:edit') && (
                   <div className="flex justify-start">
-                       <button className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                           保存德育评价
+                       <button
+                           onClick={handleSaveEvaluation}
+                           disabled={savingEvaluation}
+                           className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                           {savingEvaluation ? '保存中...' : '保存德育评价'}
                        </button>
                   </div>
               )}
@@ -3381,6 +3452,11 @@ const DormReport: React.FC = () => {
     const [detailLoading, setDetailLoading] = useState(false);
     const [dataError, setDataError] = useState<string | null>(null);
     const [analysisType, setAnalysisType] = useState('寝室内务');
+    const { toast } = useToast();
+
+    // 评价内容状态
+    const [evaluation, setEvaluation] = useState<string>('');
+    const [savingEvaluation, setSavingEvaluation] = useState(false);
     
     // 筛选器状态
     const [filters, setFilters] = useState({
@@ -4180,6 +4256,30 @@ const DormReport: React.FC = () => {
         );
     }
 
+    // 保存评价
+    const handleSaveEvaluation = async () => {
+        const schoolId = filterOptions.schools.find((s) => s.name === filters.school)?.id;
+        if (!schoolId || !filters.dateRange.start || !filters.dateRange.end) return;
+
+        try {
+            setSavingEvaluation(true);
+            await api.post('/api/moral/reports/dorm/evaluation', null, {
+                params: {
+                    school_id: schoolId,
+                    start_date: filters.dateRange.start,
+                    end_date: filters.dateRange.end,
+                    evaluation
+                }
+            });
+            toast.success('评价保存成功');
+        } catch (error) {
+            console.error('Failed to save evaluation:', error);
+            toast.error('评价保存失败');
+        } finally {
+            setSavingEvaluation(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header/Filter - 参考教学管理模块优化 */}
@@ -4401,17 +4501,24 @@ const DormReport: React.FC = () => {
                 </div>
                 
                 <div className="relative">
-                    <textarea 
+                    <textarea
                         className="w-full h-32 p-4 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
                         placeholder={`请输入${analysisType}方面的分析评价...`}
+                        value={evaluation}
+                        onChange={(e) => setEvaluation(e.target.value.slice(0, 2000))}
+                        maxLength={2000}
                     ></textarea>
                     <div className="absolute bottom-3 right-3 text-xs text-slate-400">提示: 最多输入2000字</div>
                 </div>
 
                 {hasPermission('moral:edit') && (
                     <div className="flex justify-start">
-                         <button className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                             保存评价
+                         <button
+                             onClick={handleSaveEvaluation}
+                             disabled={savingEvaluation}
+                             className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                             {savingEvaluation ? '保存中...' : '保存评价'}
                          </button>
                     </div>
                 )}
@@ -4536,6 +4643,11 @@ const DistrictReport: React.FC = () => {
     const [detailLoading, setDetailLoading] = useState(false);
     const [dataError, setDataError] = useState<string | null>(null);
     const [analysisType, setAnalysisType] = useState('德育');
+    const { toast } = useToast();
+
+    // 评价内容状态
+    const [evaluation, setEvaluation] = useState<string>('');
+    const [savingEvaluation, setSavingEvaluation] = useState(false);
     
     // 筛选器状态
     const [filters, setFilters] = useState({
@@ -5191,6 +5303,30 @@ const DistrictReport: React.FC = () => {
         );
     }
 
+    // 保存评价
+    const handleSaveEvaluation = async () => {
+        const groupId = filterOptions.groups.find((g) => g.name === filters.group)?.id;
+        if (!groupId || !filters.dateRange.start || !filters.dateRange.end) return;
+
+        try {
+            setSavingEvaluation(true);
+            await api.post('/api/moral/reports/district/evaluation', null, {
+                params: {
+                    group_id: groupId,
+                    start_date: filters.dateRange.start,
+                    end_date: filters.dateRange.end,
+                    evaluation
+                }
+            });
+            toast.success('评价保存成功');
+        } catch (error) {
+            console.error('Failed to save evaluation:', error);
+            toast.error('评价保存失败');
+        } finally {
+            setSavingEvaluation(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header/Filter - 参考校级报表优化 */}
@@ -5401,18 +5537,27 @@ const DistrictReport: React.FC = () => {
                 </div>
                 
                 <div className="relative">
-                    <textarea 
+                    <textarea
                         className="w-full h-32 p-4 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
                         placeholder={`请输入${analysisType}方面的分析评价...`}
+                        value={evaluation}
+                        onChange={(e) => setEvaluation(e.target.value.slice(0, 2000))}
+                        maxLength={2000}
                     ></textarea>
                     <div className="absolute bottom-3 right-3 text-xs text-slate-400">提示: 最多输入2000字</div>
                 </div>
 
-                <div className="flex justify-start">
-                    <button className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                        保存{analysisType}评价
-                    </button>
-                </div>
+                {hasPermission('moral:edit') && (
+                    <div className="flex justify-start">
+                        <button
+                            onClick={handleSaveEvaluation}
+                            disabled={savingEvaluation}
+                            className="px-6 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {savingEvaluation ? '保存中...' : `保存${analysisType}评价`}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

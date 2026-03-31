@@ -4,7 +4,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 // 环境变量配置，生产环境地址通常在 .env 文件中配置
 // VITE_API_BASE_URL=http://localhost:8000
 // Type assertion used to avoid TS error when vite types are not loaded
-export const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+// 注意：前端代码中所有API路径已包含/api/前缀，baseURL应为空或/，由Nginx代理到后端
+export const API_BASE_URL = '';
 
 class ApiClient {
   private instance: AxiosInstance;

@@ -2,9 +2,10 @@ from typing import Any, Optional, List
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, Query, Request
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, Column, BIGINT, TEXT, ForeignKey, and_
+from sqlalchemy.dialects.mysql import DATE, DATETIME
 from pydantic import BaseModel
-from app.database import get_db
+from app.database import get_db, Base
 from app.models.moral import CfgMoralIndicator, CfgTeachingIndicator, BizMoralRecord
 from app.models.org import SysOrg
 from app.models.student import BaseStudent as Student
@@ -2303,3 +2304,313 @@ async def get_district_detail(
         'records': detail_records,
         'total': len(detail_records)
     }
+
+
+# ==================== 德育评价保存 API ====================
+
+class MoralGradeEvaluation(Base):
+    """年级德育评价表"""
+    __tablename__ = "biz_moral_grade_evaluation"
+
+    id = Column(BIGINT, primary_key=True, autoincrement=True)
+    grade_id = Column(BIGINT, ForeignKey('sys_org.id'), nullable=False, index=True)
+    start_date = Column(DATE, nullable=False)
+    end_date = Column(DATE, nullable=False)
+    evaluation = Column(TEXT)
+    created_by = Column(BIGINT, ForeignKey('sys_user.id'), nullable=False)
+    created_at = Column(DATETIME, default=datetime.now)
+    updated_at = Column(DATETIME, default=datetime.now, onupdate=datetime.now)
+
+
+@router.post("/reports/grade/evaluation")
+async def save_moral_grade_evaluation(
+    grade_id: int,
+    start_date: str,
+    end_date: str,
+    evaluation: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """保存年级德育评价"""
+    existing = db.query(MoralGradeEvaluation).filter(
+        and_(
+            MoralGradeEvaluation.grade_id == grade_id,
+            MoralGradeEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralGradeEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if existing:
+        existing.evaluation = evaluation
+        existing.updated_at = datetime.now()
+        db.commit()
+        return {"message": "评价已更新", "id": existing.id}
+    else:
+        new_eval = MoralGradeEvaluation(
+            grade_id=grade_id,
+            start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+            end_date=datetime.strptime(end_date, '%Y-%m-%d').date(),
+            evaluation=evaluation,
+            created_by=current_user.id
+        )
+        db.add(new_eval)
+        db.commit()
+        return {"message": "评价已保存", "id": new_eval.id}
+
+
+@router.get("/reports/grade/evaluation")
+async def get_moral_grade_evaluation(
+    grade_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """获取年级德育评价"""
+    evaluation = db.query(MoralGradeEvaluation).filter(
+        and_(
+            MoralGradeEvaluation.grade_id == grade_id,
+            MoralGradeEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralGradeEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if evaluation:
+        return {
+            "id": evaluation.id,
+            "evaluation": evaluation.evaluation,
+            "created_at": evaluation.created_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.created_at else None,
+            "updated_at": evaluation.updated_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.updated_at else None
+        }
+    return {"id": None, "evaluation": "", "created_at": None, "updated_at": None}
+
+
+class MoralSchoolEvaluation(Base):
+    """校级德育评价表"""
+    __tablename__ = "biz_moral_school_evaluation"
+
+    id = Column(BIGINT, primary_key=True, autoincrement=True)
+    school_id = Column(BIGINT, ForeignKey('sys_org.id'), nullable=False, index=True)
+    start_date = Column(DATE, nullable=False)
+    end_date = Column(DATE, nullable=False)
+    evaluation = Column(TEXT)
+    created_by = Column(BIGINT, ForeignKey('sys_user.id'), nullable=False)
+    created_at = Column(DATETIME, default=datetime.now)
+    updated_at = Column(DATETIME, default=datetime.now, onupdate=datetime.now)
+
+
+@router.post("/reports/school/evaluation")
+async def save_moral_school_evaluation(
+    school_id: int,
+    start_date: str,
+    end_date: str,
+    evaluation: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """保存校级德育评价"""
+    existing = db.query(MoralSchoolEvaluation).filter(
+        and_(
+            MoralSchoolEvaluation.school_id == school_id,
+            MoralSchoolEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralSchoolEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if existing:
+        existing.evaluation = evaluation
+        existing.updated_at = datetime.now()
+        db.commit()
+        return {"message": "评价已更新", "id": existing.id}
+    else:
+        new_eval = MoralSchoolEvaluation(
+            school_id=school_id,
+            start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+            end_date=datetime.strptime(end_date, '%Y-%m-%d').date(),
+            evaluation=evaluation,
+            created_by=current_user.id
+        )
+        db.add(new_eval)
+        db.commit()
+        return {"message": "评价已保存", "id": new_eval.id}
+
+
+@router.get("/reports/school/evaluation")
+async def get_moral_school_evaluation(
+    school_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """获取校级德育评价"""
+    evaluation = db.query(MoralSchoolEvaluation).filter(
+        and_(
+            MoralSchoolEvaluation.school_id == school_id,
+            MoralSchoolEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralSchoolEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if evaluation:
+        return {
+            "id": evaluation.id,
+            "evaluation": evaluation.evaluation,
+            "created_at": evaluation.created_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.created_at else None,
+            "updated_at": evaluation.updated_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.updated_at else None
+        }
+    return {"id": None, "evaluation": "", "created_at": None, "updated_at": None}
+
+
+class MoralDormEvaluation(Base):
+    """宿舍德育评价表"""
+    __tablename__ = "biz_moral_dorm_evaluation"
+
+    id = Column(BIGINT, primary_key=True, autoincrement=True)
+    school_id = Column(BIGINT, ForeignKey('sys_org.id'), nullable=False, index=True)
+    start_date = Column(DATE, nullable=False)
+    end_date = Column(DATE, nullable=False)
+    evaluation = Column(TEXT)
+    created_by = Column(BIGINT, ForeignKey('sys_user.id'), nullable=False)
+    created_at = Column(DATETIME, default=datetime.now)
+    updated_at = Column(DATETIME, default=datetime.now, onupdate=datetime.now)
+
+
+@router.post("/reports/dorm/evaluation")
+async def save_moral_dorm_evaluation(
+    school_id: int,
+    start_date: str,
+    end_date: str,
+    evaluation: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """保存宿舍德育评价"""
+    existing = db.query(MoralDormEvaluation).filter(
+        and_(
+            MoralDormEvaluation.school_id == school_id,
+            MoralDormEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralDormEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if existing:
+        existing.evaluation = evaluation
+        existing.updated_at = datetime.now()
+        db.commit()
+        return {"message": "评价已更新", "id": existing.id}
+    else:
+        new_eval = MoralDormEvaluation(
+            school_id=school_id,
+            start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+            end_date=datetime.strptime(end_date, '%Y-%m-%d').date(),
+            evaluation=evaluation,
+            created_by=current_user.id
+        )
+        db.add(new_eval)
+        db.commit()
+        return {"message": "评价已保存", "id": new_eval.id}
+
+
+@router.get("/reports/dorm/evaluation")
+async def get_moral_dorm_evaluation(
+    school_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """获取宿舍德育评价"""
+    evaluation = db.query(MoralDormEvaluation).filter(
+        and_(
+            MoralDormEvaluation.school_id == school_id,
+            MoralDormEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralDormEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if evaluation:
+        return {
+            "id": evaluation.id,
+            "evaluation": evaluation.evaluation,
+            "created_at": evaluation.created_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.created_at else None,
+            "updated_at": evaluation.updated_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.updated_at else None
+        }
+    return {"id": None, "evaluation": "", "created_at": None, "updated_at": None}
+
+
+class MoralDistrictEvaluation(Base):
+    """学区德育评价表"""
+    __tablename__ = "biz_moral_district_evaluation"
+
+    id = Column(BIGINT, primary_key=True, autoincrement=True)
+    group_id = Column(BIGINT, nullable=False, index=True)
+    start_date = Column(DATE, nullable=False)
+    end_date = Column(DATE, nullable=False)
+    evaluation = Column(TEXT)
+    created_by = Column(BIGINT, ForeignKey('sys_user.id'), nullable=False)
+    created_at = Column(DATETIME, default=datetime.now)
+    updated_at = Column(DATETIME, default=datetime.now, onupdate=datetime.now)
+
+
+@router.post("/reports/district/evaluation")
+async def save_moral_district_evaluation(
+    group_id: int,
+    start_date: str,
+    end_date: str,
+    evaluation: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """保存学区德育评价"""
+    existing = db.query(MoralDistrictEvaluation).filter(
+        and_(
+            MoralDistrictEvaluation.group_id == group_id,
+            MoralDistrictEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralDistrictEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if existing:
+        existing.evaluation = evaluation
+        existing.updated_at = datetime.now()
+        db.commit()
+        return {"message": "评价已更新", "id": existing.id}
+    else:
+        new_eval = MoralDistrictEvaluation(
+            group_id=group_id,
+            start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+            end_date=datetime.strptime(end_date, '%Y-%m-%d').date(),
+            evaluation=evaluation,
+            created_by=current_user.id
+        )
+        db.add(new_eval)
+        db.commit()
+        return {"message": "评价已保存", "id": new_eval.id}
+
+
+@router.get("/reports/district/evaluation")
+async def get_moral_district_evaluation(
+    group_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_active_user)
+) -> Any:
+    """获取学区德育评价"""
+    evaluation = db.query(MoralDistrictEvaluation).filter(
+        and_(
+            MoralDistrictEvaluation.group_id == group_id,
+            MoralDistrictEvaluation.start_date == datetime.strptime(start_date, '%Y-%m-%d').date(),
+            MoralDistrictEvaluation.end_date == datetime.strptime(end_date, '%Y-%m-%d').date()
+        )
+    ).first()
+
+    if evaluation:
+        return {
+            "id": evaluation.id,
+            "evaluation": evaluation.evaluation,
+            "created_at": evaluation.created_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.created_at else None,
+            "updated_at": evaluation.updated_at.strftime('%Y-%m-%d %H:%M:%S') if evaluation.updated_at else None
+        }
+    return {"id": None, "evaluation": "", "created_at": None, "updated_at": None}
