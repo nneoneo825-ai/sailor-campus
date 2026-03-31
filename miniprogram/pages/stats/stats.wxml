@@ -1,0 +1,131 @@
+<view class="container">
+  <!-- 标题和操作栏 -->
+  <view class="header">
+    <text class="title">数据统计</text>
+    <view class="header-actions">
+      <view class="action-btn refresh-btn" bindtap="onRefresh">
+        <text class="action-icon">🔄</text>
+        <text class="action-text">刷新</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 基础统计卡片 -->
+  <view class="stats-cards">
+    <view class="stat-card" data-type="records" bindtap="onStatCardTap">
+      <text class="stat-icon">📋</text>
+      <text class="stat-value">{{totalRecords}}</text>
+      <text class="stat-label">检查记录</text>
+    </view>
+
+    <view class="stat-card" data-type="tasks" bindtap="onStatCardTap">
+      <text class="stat-icon">✅</text>
+      <text class="stat-value">{{completedTasks}}/{{totalTasks}}</text>
+      <text class="stat-label">完成任务</text>
+    </view>
+
+    <view class="stat-card" data-type="rate" bindtap="onStatCardTap">
+      <text class="stat-icon">📊</text>
+      <text class="stat-value">{{taskCompletionRate}}%</text>
+      <text class="stat-label">完成率</text>
+    </view>
+  </view>
+
+  <!-- 今日统计 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">今日概况</text>
+    </view>
+    <view class="today-stats">
+      <view class="today-stat-item">
+        <text class="today-stat-value">{{todayStats.records}}</text>
+        <text class="today-stat-label">检查记录</text>
+      </view>
+      <view class="today-stat-item">
+        <text class="today-stat-value">{{todayStats.completed}}/{{todayStats.tasks}}</text>
+        <text class="today-stat-label">任务完成</text>
+      </view>
+      <view class="today-stat-item">
+        <text class="today-stat-value">{{todayStats.tasks > 0 ? Math.round((todayStats.completed / todayStats.tasks) * 100) : 0}}%</text>
+        <text class="today-stat-label">今日完成率</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 按类型统计 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">检查类型分布</text>
+    </view>
+    <view class="type-stats">
+      <view wx:for="{{typeStats}}" wx:key="type" class="type-item">
+        <view class="type-info">
+          <view class="type-dot" style="background-color: {{item.color}}"></view>
+          <text class="type-label">{{item.label}}</text>
+        </view>
+        <text class="type-count">{{item.count}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 月度统计 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">月度趋势</text>
+    </view>
+    <view class="monthly-chart">
+      <view class="monthly-bars">
+        <view
+          wx:for="{{monthlyStats}}"
+          wx:key="month"
+          class="monthly-bar-container"
+        >
+          <view class="monthly-value-wrapper">
+            <text class="monthly-bar-value">{{item.count}}</text>
+          </view>
+          <view class="monthly-bar-wrapper">
+            <view
+              class="monthly-bar"
+              style="height: {{item.count > 0 ? (item.count / monthlyMaxCount * 150) + 'rpx' : '8rpx'}}; background-color: {{item.count > 0 ? '#10b981' : '#e2e8f0'}}"
+            ></view>
+          </view>
+          <text class="monthly-bar-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 本周统计 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">本周检查记录</text>
+    </view>
+    <view class="weekly-chart">
+      <view class="chart-bars">
+        <view
+          wx:for="{{currentWeek}}"
+          wx:key="date"
+          class="bar-container"
+        >
+          <view class="bar-value-wrapper">
+            <text class="bar-value">{{weeklyStats[index]}}</text>
+          </view>
+          <view class="bar-wrapper">
+            <view
+              class="bar"
+              style="height: {{weeklyStats[index] > 0 ? (weeklyStats[index] / weeklyMaxCount * 150) + 'rpx' : '8rpx'}}; background-color: {{weeklyStats[index] > 0 ? '#4f46e5' : '#e2e8f0'}}"
+            ></view>
+          </view>
+          <text class="bar-label">{{item.day}}</text>
+          <text class="bar-date">{{item.date}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 页面底部说明 -->
+  <view class="page-footer">
+    <text class="footer-text">数据统计基于检查记录和任务完成情况实时更新</text>
+    <text class="footer-hint">💡 长按统计卡片可查看详细信息</text>
+  </view>
+</view>

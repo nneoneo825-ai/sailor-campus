@@ -1,0 +1,425 @@
+/* 统计页面样式 */
+.container {
+  min-height: 100vh;
+  padding: 32rpx;
+  background-color: #f8fafc;
+}
+
+.header {
+  margin-bottom: 48rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.refresh-btn {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.refresh-btn:active {
+  background-color: #e2e8f0;
+  transform: scale(0.95);
+}
+
+
+
+.action-icon {
+  font-size: 24rpx;
+}
+
+.action-text {
+  font-size: 22rpx;
+}
+
+/* 统计卡片 */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-bottom: 48rpx;
+}
+
+.stat-card {
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  padding: 32rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.stat-icon {
+  font-size: 48rpx;
+}
+
+.stat-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #4f46e5;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+/* 分区 */
+.section {
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #334155;
+}
+
+/* 类型统计 */
+.type-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.type-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  background-color: #f8fafc;
+  border-radius: 24rpx;
+}
+
+.type-info {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.type-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+}
+
+.type-label {
+  font-size: 26rpx;
+  color: #475569;
+  font-weight: 500;
+}
+
+.type-count {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+/* 周统计图表 */
+.weekly-chart {
+  padding: 16rpx 0;
+}
+
+.chart-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 320rpx;
+  padding: 0 8rpx;
+}
+
+.bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+}
+
+.bar-wrapper {
+  width: 48rpx;
+  height: 200rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background-color: #f8fafc;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 4rpx;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 20rpx 20rpx 0 0;
+  transition: height 0.3s;
+}
+
+.bar-label {
+  font-size: 20rpx;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.bar-date {
+  font-size: 18rpx;
+  color: #94a3b8;
+}
+
+.bar-value-wrapper {
+  height: 40rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar-value {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #4f46e5;
+  line-height: 1;
+}
+
+/* 今日统计 */
+.today-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+
+.today-stat-item {
+  background-color: #f8fafc;
+  border-radius: 24rpx;
+  padding: 24rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.today-stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4f46e5;
+}
+
+.today-stat-label {
+  font-size: 20rpx;
+  color: #64748b;
+}
+
+/* 月度统计 */
+.monthly-chart {
+  padding: 16rpx 0;
+}
+
+.monthly-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 250rpx;
+  padding: 0 8rpx;
+}
+
+.monthly-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+}
+
+.monthly-bar-wrapper {
+  width: 48rpx;
+  height: 150rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background-color: #f8fafc;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 4rpx;
+}
+
+.monthly-bar {
+  width: 100%;
+  border-radius: 20rpx 20rpx 0 0;
+  transition: height 0.3s;
+}
+
+.monthly-bar-label {
+  font-size: 20rpx;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.monthly-value-wrapper {
+  height: 40rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.monthly-bar-value {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #10b981;
+  line-height: 1;
+}
+
+/* 部门统计 */
+.dept-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.dept-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 24rpx;
+  background-color: #f8fafc;
+  border-radius: 24rpx;
+}
+
+.dept-info {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.dept-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+}
+
+.dept-label {
+  font-size: 26rpx;
+  color: #475569;
+  font-weight: 500;
+}
+
+.dept-count {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1e293b;
+  align-self: flex-end;
+}
+
+.dept-progress {
+  width: 100%;
+  height: 8rpx;
+  background-color: #e2e8f0;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.dept-progress-bar {
+  height: 100%;
+  border-radius: 4rpx;
+  transition: width 0.3s;
+}
+
+/* 页面底部 */
+.page-footer {
+  margin-top: 48rpx;
+  padding: 32rpx;
+  text-align: center;
+}
+
+.footer-text {
+  display: block;
+  font-size: 20rpx;
+  color: #94a3b8;
+  margin-bottom: 16rpx;
+  line-height: 1.4;
+}
+
+.footer-hint {
+  display: block;
+  font-size: 18rpx;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* 卡片动画效果 */
+.stat-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4rpx);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:active {
+  transform: translateY(0);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+/* 图表动画 */
+.bar, .monthly-bar {
+  animation: growUp 1s ease-out;
+}
+
+@keyframes growUp {
+  from {
+    height: 8rpx;
+  }
+  to {
+    height: auto;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .today-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 24rpx;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    align-self: flex-end;
+  }
+}

@@ -1,0 +1,46 @@
+<view class="container">
+  <view class="header">
+    <text class="title">我的草稿</text>
+    <text class="count">{{drafts.length}}</text>
+  </view>
+
+  <view class="draft-list">
+    <view wx:if="{{drafts.length === 0}}" class="empty-state">
+      <text class="empty-icon">📝</text>
+      <text>暂无草稿</text>
+      <text class="empty-hint">在检查记录中保存草稿</text>
+    </view>
+
+    <view 
+      wx:for="{{drafts}}" 
+      wx:key="id" 
+      class="draft-item"
+      data-draft="{{item}}"
+      bindtap="onEditDraft"
+    >
+      <view class="draft-content">
+        <view class="draft-header">
+          <view class="draft-type" style="background-color: {{item.type === 'MORAL' ? '#3b82f6' : item.type === 'TEACHING' ? '#10b981' : item.type === 'DORM' ? '#8b5cf6' : '#6366f1'}}">
+            <text>{{item.type === 'MORAL' ? '德育' : item.type === 'TEACHING' ? '教学' : item.type === 'DORM' ? '宿舍' : '整体'}}</text>
+          </view>
+          <text class="draft-time">{{formatTime(item.timestamp)}}</text>
+        </view>
+        
+        <text class="draft-target">{{item.target}}</text>
+        
+        <view class="draft-info">
+          <text class="draft-category">{{item.category}}</text>
+          <text class="draft-item">{{item.item}}</text>
+        </view>
+      </view>
+
+      <view 
+        class="draft-delete"
+        data-id="{{item.id}}"
+        catchtap="onDeleteDraft"
+      >
+        <text>🗑️</text>
+      </view>
+    </view>
+  </view>
+</view>

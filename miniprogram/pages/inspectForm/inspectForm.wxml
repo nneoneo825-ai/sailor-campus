@@ -1,0 +1,536 @@
+<view class="page">
+  <!-- 成功状态 -->
+  <view wx:if="{{isSuccess}}" class="success-state">
+    <view class="success-icon">✓</view>
+    <text class="success-title">提交成功</text>
+    <text class="success-desc">记录已保存，即将跳转。</text>
+  </view>
+
+  <!-- 正常状态 -->
+  <view wx:else class="content">
+    <!-- 顶部导航 -->
+    <view class="nav-bar">
+      <view class="nav-back" bindtap="onBack">
+        <text class="iconfont">‹</text>
+      </view>
+      <text class="nav-title">{{typeLabel}}</text>
+      <view class="nav-placeholder"></view>
+    </view>
+
+    <!-- 滚动内容区 -->
+    <scroll-view class="scroll-view" scroll-y>
+      <!-- 整体检查模块选择 -->
+      <view wx:if="{{type === 'overall'}}" class="module-card card">
+        <view class="module-tabs">
+          <view 
+            wx:for="{{[{id: 'CLASS', label: '班级', icon: '🎓'}, {id: 'SUBJECT', label: '学科', icon: '📚'}, {id: 'DORM', label: '宿舍', icon: '🏢'}]}}"
+            wx:key="id"
+            class="module-tab {{overallModule === item.id ? 'active' : ''}}"
+            data-module="{{item.id}}"
+            bindtap="onModuleChange"
+          >
+            <text class="module-icon">{{item.icon}}</text>
+            <text class="module-label">{{item.label}}</text>
+          </view>
+        </view>
+
+        <view class="module-content">
+          <!-- 班级模式 -->
+          <view wx:if="{{overallModule === 'CLASS'}}">
+            <view class="selection-group">
+              <text class="label">选择年级</text>
+              <view class="tag-list">
+                <view 
+                  wx:for="{{grades}}" 
+                  wx:key="id"
+                  class="tag {{item.isSelected ? 'active' : ''}}"
+                  data-id="{{item.id}}"
+                  data-name="{{item.name}}"
+                  bindtap="onGradeSelect"
+                >{{item.name}}</view>
+              </view>
+            </view>
+            <view class="selection-group">
+              <text class="label">选择班级</text>
+              <view class="grid-4">
+                <view 
+                  wx:for="{{classes}}" 
+                  wx:key="id"
+                  class="grid-item {{item.isSelected ? 'selected' : ''}}"
+                  data-id="{{item.id}}"
+                  data-name="{{item.name}}"
+                  bindtap="onClassToggle"
+                >{{item.name}}</view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 学科模式 -->
+          <view wx:if="{{overallModule === 'SUBJECT'}}">
+            <view class="selection-group">
+              <text class="label">选择年级</text>
+              <view class="tag-list">
+                <view 
+                  wx:for="{{grades}}" 
+                  wx:key="id"
+                  class="tag {{item.isSelected ? 'active' : ''}}"
+                  data-id="{{item.id}}"
+                  data-name="{{item.name}}"
+                  bindtap="onGradeSelect"
+                >{{item.name}}</view>
+              </view>
+            </view>
+            <view class="selection-group">
+              <text class="label">选择学科组</text>
+              <view class="grid-3">
+                <view 
+                  wx:for="{{subjects}}" 
+                  wx:key="name"
+                  class="grid-item {{item.isSelected ? 'selected' : ''}}"
+                  data-subject="{{item.name}}"
+                  bindtap="onSubjectToggle"
+                >{{item.name}}组</view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 宿舍模式 -->
+          <view wx:if="{{overallModule === 'DORM'}}">
+            <view class="selection-group">
+              <text class="label">楼栋/楼层</text>
+              <view class="tag-list">
+                <view 
+                  wx:for="{{buildings}}" 
+                  wx:key="name"
+                  class="tag {{item.isSelected ? 'active' : ''}}"
+                  data-building="{{item.name}}"
+                  bindtap="onBuildingSelect"
+                >{{item.name}}</view>
+              </view>
+              <view class="tag-list">
+                <view 
+                  wx:for="{{floors}}" 
+                  wx:key="name"
+                  class="tag {{item.isSelected ? 'active' : ''}}"
+                  data-floor="{{item.name}}"
+                  bindtap="onFloorSelect"
+                >{{item.name}}</view>
+              </view>
+            </view>
+            <view class="selection-group">
+              <text class="label">选择房号</text>
+              <view class="grid-4">
+                <view 
+                  wx:for="{{rooms}}" 
+                  wx:key="name"
+                  class="grid-item {{item.isSelected ? 'selected' : ''}}"
+                  data-room="{{item.name}}"
+                  bindtap="onRoomToggle"
+                >{{item.name}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 宿舍检查筛选 -->
+      <view wx:if="{{type === 'dorm'}}" class="filter-card card">
+        <view class="selection-group">
+          <text class="label">位置筛选</text>
+          <view class="tag-list">
+            <view 
+              wx:for="{{buildings}}" 
+              wx:key="name"
+              class="tag purple {{item.isSelected ? 'active' : ''}}"
+              data-building="{{item.name}}"
+              bindtap="onBuildingSelect"
+            >{{item.name}}</view>
+          </view>
+          <view class="tag-list">
+            <view 
+              wx:for="{{floors}}" 
+              wx:key="name"
+              class="tag purple {{item.isSelected ? 'active' : ''}}"
+              data-floor="{{item.name}}"
+              bindtap="onFloorSelect"
+            >{{item.name}}</view>
+          </view>
+        </view>
+        <view class="selection-group">
+          <text class="label">选择房号</text>
+          <view class="grid-4">
+            <view 
+              wx:for="{{rooms}}" 
+              wx:key="name"
+              class="grid-item {{item.isSelected ? 'selected' : ''}}"
+              data-room="{{item.name}}"
+              bindtap="onRoomToggle"
+            >{{item.name}}</view>
+          </view>
+        </view>
+
+        <!-- 床位选择 -->
+        <view wx:if="{{selectedRoom}}" class="bed-selection">
+          <view class="section-header">
+            <text>🏢 宿舍床位表</text>
+          </view>
+          <view class="bed-grid">
+            <view 
+              wx:for="{{dormStudents}}" 
+              wx:key="id"
+              class="bed-item {{item.isSelected ? 'selected' : ''}}"
+              data-id="{{item.id}}"
+              data-name="床位{{item.bed_no || index + 1}} {{item.name}}"
+              data-bed-no="{{item.bed_no || index + 1}}"
+              data-class-id="{{item.class_id}}"
+              data-class-name="{{item.class_name}}"
+              data-grade-name="{{item.grade_name}}"
+              bindtap="onItemToggle"
+            >
+              <text class="bed-icon">🛏️</text>
+              <view class="bed-info">
+                <text class="bed-number">床位 {{item.bed_no || index + 1}}</text>
+                <text class="bed-name">{{item.name}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 教学检查筛选 -->
+      <view wx:if="{{type === 'teaching'}}" class="filter-card card">
+        <view class="selection-group">
+          <text class="label">选择年级</text>
+          <view class="tag-list">
+            <view 
+              wx:for="{{grades}}" 
+              wx:key="id"
+              class="tag green {{item.isSelected ? 'active' : ''}}"
+              data-id="{{item.id}}"
+              data-name="{{item.name}}"
+              bindtap="onGradeSelect"
+            >{{item.name}}</view>
+          </view>
+        </view>
+
+        <view class="selection-group">
+          <text class="label">选择教研组/成员</text>
+          <view wx:for="{{teachingMembers}}" wx:key="*this" class="teacher-group">
+            <text class="group-label">{{item[0]}}</text>
+            <view class="tag-list">
+              <view
+                wx:for="{{item[1]}}"
+                wx:key="id"
+                wx:for-item="member"
+                class="teacher-tag {{member.isSelected ? 'selected' : ''}}"
+                data-id="{{member.id}}"
+                data-name="{{member.name}}"
+                data-teacher_id="{{member.teacher_id}}"
+                bindtap="onItemToggle"
+              >
+                <text>👤</text>
+                <text>{{member.name}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 德育检查筛选 -->
+      <view wx:if="{{type === 'moral'}}" class="filter-card card">
+        <view class="selection-group">
+          <text class="label">选择年级</text>
+          <view class="tag-list">
+            <view 
+              wx:for="{{grades}}" 
+              wx:key="id"
+              class="tag blue {{item.isSelected ? 'active' : ''}}"
+              data-id="{{item.id}}"
+              data-name="{{item.name}}"
+              bindtap="onGradeSelect"
+            >{{item.name}}</view>
+          </view>
+        </view>
+        <view class="selection-group">
+          <text class="label">选择班级</text>
+          <view class="grid-4">
+            <view 
+              wx:for="{{classes}}" 
+              wx:key="id"
+              class="grid-item {{item.isSelected ? 'selected' : ''}}"
+              data-id="{{item.id}}"
+              data-name="{{item.name}}"
+              bindtap="onClassToggle"
+            >{{item.name}}</view>
+          </view>
+        </view>
+
+        <!-- 座位表 -->
+        <view class="seat-section">
+          <view class="section-header">
+            <text>👥 班级座位表</text>
+          </view>
+          <scroll-view class="seat-scroll" scroll-x>
+            <view class="seat-grid">
+              <view class="seat-row">
+                <view class="seat-cell label"></view>
+                <view class="seat-cell label">窗户</view>
+                <view class="seat-cell label"></view>
+                <view class="seat-cell podium">讲台</view>
+                <view class="seat-cell label"></view>
+                <view class="seat-cell label">门</view>
+              </view>
+              <view class="seat-row">
+                <view class="seat-cell label"></view>
+                <view 
+                  wx:for="{{colLabels}}" 
+                  wx:key="*this"
+                  class="seat-cell label-col"
+                >{{item}}</view>
+              </view>
+              <view 
+                wx:for="{{studentsGrid}}" 
+                wx:key="*this"
+                wx:for-index="rowIndex"
+                class="seat-row"
+              >
+                <view class="seat-cell label-row">{{rowIndex + 1}}</view>
+                <view 
+                  wx:for="{{item}}" 
+                  wx:key="id"
+                  wx:for-index="colIndex"
+                  class="seat-cell {{item.isSelected ? 'selected' : ''}}"
+                  data-id="{{item.id}}"
+                  data-name="{{item.coord}} {{item.name}}"
+                  bindtap="onItemToggle"
+                >
+                  <text class="seat-coord">{{item.coord}}</text>
+                  <text class="seat-name">{{item.name}}</text>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <!-- 表单内容 -->
+      <view class="form-section">
+        <view class="form-group">
+          <text class="label">检查对象</text>
+          <input 
+            class="input readonly"
+            value="{{target}}"
+            placeholder="自动生成"
+            disabled
+          />
+        </view>
+
+        <!-- 德育检查指标 -->
+        <view wx:if="{{type === 'moral'}}" class="indicators-section">
+          <text class="label">指标大项</text>
+          <view class="tag-list">
+            <view
+              wx:for="{{['德育', '智育', '体育', '美育', '劳育']}}"
+              wx:key="*this"
+              class="indicator-tag {{category === item ? 'active' : ''}}"
+              data-category="{{item}}"
+              bindtap="onMoralCategorySelect"
+            >{{item}}</view>
+          </view>
+
+          <view wx:if="{{category}}" class="sub-indicators">
+            <text class="label">小项</text>
+            <view class="tag-list">
+              <view
+                wx:for="{{moralSubItems}}"
+                wx:key="*this"
+                class="indicator-tag sub {{subCategory === item ? 'active' : ''}}"
+                data-sub="{{item}}"
+                bindtap="onMoralSubCategorySelect"
+              >{{item}}</view>
+            </view>
+          </view>
+
+          <view wx:if="{{subCategory}}" class="detail-indicators">
+            <text class="label">具体指标</text>
+            <view
+              wx:for="{{moralDetailItems}}"
+              wx:key="name"
+              class="indicator-item {{item.isSelected ? 'selected' : ''}}"
+              data-item="{{item.name}}"
+              bindtap="onMoralItemToggle"
+            >
+              <text>{{item.name}}</text>
+              <text class="score-tag">{{item.default_score}}分</text>
+              <text wx:if="{{item.isSelected}}">✓</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 教学检查指标 -->
+        <view wx:if="{{type === 'teaching'}}" class="indicators-section">
+          <text class="label">指标大项</text>
+          <view class="tag-list">
+            <view
+              wx:for="{{teachingCategories}}"
+              wx:key="*this"
+              class="indicator-tag {{category === item ? 'active' : ''}}"
+              data-category="{{item}}"
+              bindtap="onTeachingCategorySelect"
+            >{{item}}</view>
+          </view>
+
+          <view wx:if="{{category}}" class="detail-indicators">
+            <text class="label">具体指标 (多选)</text>
+            <view
+              wx:for="{{teachingDetailItems}}"
+              wx:key="name"
+              class="indicator-item {{item.isSelected ? 'selected' : ''}}"
+              data-item="{{item.name}}"
+              bindtap="onTeachingItemToggle"
+            >
+              <text>{{item.name}}</text>
+              <text class="score-tag">{{item.default_score}}分</text>
+              <text wx:if="{{item.isSelected}}">✓</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 宿舍检查指标 -->
+        <view wx:if="{{type === 'dorm'}}" class="indicators-section">
+          <text class="label">指标大项</text>
+          <view class="tag-list">
+            <view
+              wx:for="{{dormCategories}}"
+              wx:key="*this"
+              class="indicator-tag purple {{category === item ? 'active' : ''}}"
+              data-category="{{item}}"
+              bindtap="onDormCategorySelect"
+            >{{item}}</view>
+          </view>
+
+          <view wx:if="{{category}}" class="detail-indicators">
+            <text class="label">具体指标 (多选)</text>
+            <view
+              wx:for="{{dormDetailItems}}"
+              wx:key="name"
+              class="indicator-item {{item.isSelected ? 'selected' : ''}}"
+              data-item="{{item.name}}"
+              bindtap="onDormItemToggle"
+            >
+              <text>{{item.name}}</text>
+              <text class="score-tag">{{item.default_score}}分</text>
+              <text wx:if="{{item.isSelected}}">✓</text>
+            </view>
+          </view>
+        </view>
+
+
+        <!-- 整体检查指标 -->
+        <view wx:if="{{type === 'overall'}}" class="indicators-section">
+          <text class="label">指标大项</text>
+          <view class="tag-list">
+            <view
+              wx:for="{{overallCategories}}"
+              wx:key="name"
+              class="indicator-tag {{overallCategory === item.name ? 'active' : ''}}"
+              data-category="{{item.name}}"
+              bindtap="onOverallCategorySelect"
+            >{{item.name}}</view>
+          </view>
+
+          <!-- 班级模块：三层结构，显示小项选择 -->
+          <view wx:if="{{overallCategory && overallModule === 'CLASS'}}" class="sub-indicators">
+            <text class="label">小项</text>
+            <view class="tag-list">
+              <view
+                wx:for="{{overallSubItems}}"
+                wx:key="name"
+                class="indicator-tag sub {{overallSubCategory === item.name ? 'active' : ''}}"
+                data-sub="{{item.name}}"
+                bindtap="onOverallSubCategorySelect"
+              >{{item.name}}</view>
+            </view>
+          </view>
+
+          <!-- 班级模块：三层结构，选择小项后显示具体指标 -->
+          <view wx:if="{{overallSubCategory && overallModule === 'CLASS'}}" class="detail-indicators">
+            <text class="label">具体指标 (多选)</text>
+            <view
+              wx:for="{{overallDetailItems}}"
+              wx:key="indicator_id"
+              class="indicator-item {{item.isSelected ? 'selected' : ''}}"
+              data-id="{{item.indicator_id}}"
+              data-name="{{item.name}}"
+              bindtap="onOverallItemToggle"
+            >
+              <text>{{item.name}}</text>
+              <text class="score-tag">{{item.default_score}}分</text>
+              <text wx:if="{{item.isSelected}}">✓</text>
+            </view>
+          </view>
+
+          <!-- 学科/宿舍模块：二层结构，选择大项后直接显示具体指标 -->
+          <view wx:if="{{overallCategory && (overallModule === 'SUBJECT' || overallModule === 'DORM')}}" class="detail-indicators">
+            <text class="label">具体指标 (多选)</text>
+            <view
+              wx:for="{{overallDetailItems}}"
+              wx:key="indicator_id"
+              class="indicator-item {{item.isSelected ? 'selected' : ''}}"
+              data-id="{{item.indicator_id}}"
+              data-name="{{item.name}}"
+              bindtap="onOverallItemToggle"
+            >
+              <text>{{item.name}}</text>
+              <text class="score-tag">{{item.default_score}}分</text>
+              <text wx:if="{{item.isSelected}}">✓</text>
+            </view>
+          </view>
+        </view>
+
+
+        <!-- 分数变动 -->
+        <view wx:if="{{type !== 'moral' && type !== 'overall' && type !== 'teaching' && type !== 'dorm'}}" class="score-section">
+          <text class="label">分数变动</text>
+          <view class="score-control">
+            <view class="score-btn minus" data-delta="-1" bindtap="onScoreAdjust">
+              <text>-1</text>
+            </view>
+            <input 
+              class="score-input"
+              type="number"
+              value="{{score}}"
+              bindinput="onScoreInput"
+            />
+            <view class="score-btn plus" data-delta="1" bindtap="onScoreAdjust">
+              <text>+1</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 描述 -->
+        <view class="form-group">
+          <text class="label">描述记录</text>
+          <textarea 
+            class="textarea"
+            value="{{description}}"
+            bindinput="onDescriptionInput"
+            placeholder="详情说明..."
+            maxlength="500"
+          />
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 底部提交按钮 -->
+    <view class="footer">
+      <button 
+        class="submit-btn {{isSubmitting ? 'disabled' : ''}}"
+        disabled="{{isSubmitting}}"
+        bindtap="onSubmit"
+      >
+        {{isSubmitting ? '提交中...' : '立即提交'}}
+      </button>
+    </view>
+  </view>
+</view>

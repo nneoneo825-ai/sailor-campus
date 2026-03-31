@@ -1,0 +1,95 @@
+<!-- 登录页面 -->
+<view class="login-container">
+  <!-- Logo区域 -->
+  <view class="logo-section" bindtap="onLogoTap">
+    <image class="logo-img" src="/images/logo.svg" mode="aspectFit" />
+    <text class="logo-title">水手校园</text>
+    <text class="logo-subtitle">精细化管理平台</text>
+  </view>
+
+  <!-- 服务器地址设置（点击Logo 5次显示） -->
+  <view class="server-config" wx:if="{{showServerConfig}}">
+    <view class="config-title">服务器地址</view>
+    <view class="config-input-wrap">
+      <input 
+        class="config-input" 
+        type="text" 
+        placeholder="如: http://192.168.1.100:8000"
+        value="{{serverUrl}}"
+        bindinput="onServerUrlInput"
+      />
+      <button class="config-btn" bindtap="onSaveServerUrl" size="mini">保存</button>
+    </view>
+    <view class="current-url">当前: {{currentUrl}}</view>
+  </view>
+
+  <!-- 登录表单 -->
+  <view class="login-form" wx:if="{{loginMode === 'bind'}}">
+    <view class="form-title">账号绑定</view>
+    <view class="form-desc">首次使用需要绑定您的系统账号</view>
+    
+    <view class="input-group">
+      <text class="input-label">用户名</text>
+      <input 
+        class="form-input" 
+        type="text" 
+        placeholder="请输入用户名"
+        value="{{username}}"
+        bindinput="onUsernameInput"
+      />
+    </view>
+    
+    <view class="input-group">
+      <text class="input-label">密码</text>
+      <input 
+        class="form-input" 
+        type="password" 
+        placeholder="请输入密码"
+        value="{{password}}"
+        bindinput="onPasswordInput"
+      />
+    </view>
+
+    <button 
+      class="login-btn {{isLoading ? 'loading' : ''}}" 
+      bindtap="onBindAccount"
+      disabled="{{isLoading || !username || !password}}"
+    >
+      <text wx:if="{{!isLoading}}">绑定并登录</text>
+      <text wx:else>绑定中...</text>
+    </button>
+
+    <view class="switch-mode" bindtap="switchToWechatLogin">
+      <text class="switch-text">← 返回微信一键登录</text>
+    </view>
+  </view>
+
+  <!-- 微信登录区域 -->
+  <view class="wechat-login-section" wx:if="{{loginMode === 'wechat'}}">
+    <view class="login-tips">
+      <text class="tips-icon">🔐</text>
+      <text class="tips-text">安全登录，数据同步</text>
+    </view>
+
+    <button 
+      class="wechat-login-btn {{isLoading ? 'loading' : ''}}" 
+      bindtap="onWechatLogin"
+      disabled="{{isLoading}}"
+    >
+      <text class="btn-icon">📱</text>
+      <text wx:if="{{!isLoading}}">微信一键登录</text>
+      <text wx:else>登录中...</text>
+    </button>
+
+    <view class="bind-hint">
+      <text>首次使用？</text>
+      <text class="bind-link" bindtap="switchToBindMode">绑定已有账号</text>
+    </view>
+  </view>
+
+  <!-- 底部信息 -->
+  <view class="footer-info">
+    <text class="version">v1.2.0</text>
+    <text class="copyright">© 水手校园管理平台</text>
+  </view>
+</view>

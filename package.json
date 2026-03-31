@@ -1,0 +1,31 @@
+{
+  "name": "水手校园精细化管理平台",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.555.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.10.0",
+    "recharts": "^3.5.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^22.14.0",
+    "@types/xlsx": "^0.0.35",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

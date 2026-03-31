@@ -1,0 +1,254 @@
+<!-- 日历头部 -->
+<view class="calendar-header">
+  <view class="calendar-nav">
+    <view class="nav-left">
+      <view class="nav-btn" bindtap="changeDate" data-offset="{{-1}}">
+        <text class="nav-icon">‹</text>
+      </view>
+      <view class="month-display">
+        <text class="month-text">{{currentMonthDisplay}}</text>
+        <text class="calendar-icon">📅</text>
+      </view>
+      <view class="nav-btn" bindtap="changeDate" data-offset="{{1}}">
+        <text class="nav-icon">›</text>
+      </view>
+    </view>
+    <view class="nav-right">
+      <view class="today-btn" bindtap="goToToday">
+        <text>今天</text>
+      </view>
+      <view class="create-btn" bindtap="showCreateModal">
+        <text class="create-icon">➕</text>
+        <text>创建</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 周视图 -->
+  <view class="week-view">
+    <view
+      wx:for="{{weekDays}}"
+      wx:key="index"
+      class="day-item {{item.className}}"
+      data-index="{{index}}"
+      bindtap="selectDate"
+    >
+      <text class="day-label">{{days[index]}}</text>
+      <view class="day-number">
+        <text>{{item.dayNumber}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 任务列表 -->
+<view class="tasks-section">
+  <view class="tasks-header">
+    <view class="tasks-info">
+      <text class="calendar-icon-small">📅</text>
+      <text class="tasks-title">{{selectedDateDisplay}}</text>
+    </view>
+    <view class="tasks-count">
+      <text>{{completedTasksCount}} / {{totalTasksCount}} 已完成</text>
+    </view>
+  </view>
+
+  <view class="tasks-list">
+    <!-- 空状态 -->
+    <view wx:if="{{filteredTasks.length === 0}}" class="empty-state">
+      <view class="empty-icon">➕</view>
+      <text class="empty-text">该日期暂无巡查任务</text>
+      <view class="empty-action" bindtap="showCreateModal">
+        <text>新建日程</text>
+      </view>
+    </view>
+
+    <!-- 任务列表 -->
+    <block wx:else>
+      <view
+        wx:for="{{filteredTasks}}"
+        wx:key="id"
+        class="task-item {{item.status === 'completed' ? 'completed' : ''}}"
+        data-task="{{item}}"
+      >
+        <view class="task-main">
+          <view class="task-icon type-{{item.taskTypeClass || 'moral'}}">
+            <text wx:if="{{item.status === 'completed'}}">✓</text>
+            <text wx:else>⏰</text>
+          </view>
+          <view class="task-content">
+            <text class="task-title {{item.status === 'completed' ? 'completed' : ''}}">{{item.title}}</text>
+            <view class="task-meta">
+              <text class="task-time">⏰ {{item.time}}</text>
+              <view class="assignee-badge">
+                <text class="assignee-icon">👤</text>
+                <text class="assignee-text">指派: {{item.assignee_name || item.assignee}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="task-actions">
+          <view class="task-status">
+            <text wx:if="{{item.status === 'completed'}}" class="status-completed">已完成</text>
+            <text wx:elif="{{item.status === 'in_progress'}}" class="status-pending">进行中</text>
+            <text wx:else class="status-pending">待处理</text>
+          </view>
+          <view wx:if="{{item.status === 'pending'}}" class="task-start" data-task="{{item}}" bindtap="startTask">
+            <text>开始执行 ›</text>
+          </view>
+          <view wx:elif="{{item.status === 'in_progress'}}" class="task-start" data-task="{{item}}" bindtap="completeTask">
+            <text>完成任务 ›</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="tasks-footer">
+    <text>已加载该日全部日程</text>
+  </view>
+</view>
+
+<!-- 创建任务模态框 -->
+<view wx:if="{{showTaskModal}}" class="modal-overlay" catchtap="closeModal">
+  <view class="modal-container" catchtap>
+    <view class="modal-header">
+      <view class="modal-title">
+        <view class="modal-icon">➕</view>
+        <text>新建巡查任务</text>
+      </view>
+      <view class="modal-close" bindtap="closeModal">
+        <text>✕</text>
+      </view>
+    </view>
+
+    <scroll-view class="modal-body" scroll-y="true">
+      <!-- 任务名称 -->
+      <view class="form-group">
+        <text class="form-label">任务名称 *</text>
+        <input
+          class="form-input"
+          value="{{formTitle}}"
+          data-field="formTitle"
+          bindinput="onInputChange"
+          placeholder="请输入任务名称，如：三楼实验室例行检查"
+        />
+      </view>
+
+      <!-- 日期选择 -->
+      <view class="form-group">
+        <text class="form-label">执行日期</text>
+        <picker mode="date" value="{{formDate}}" start="{{todayDate}}" bindchange="onDateChange">
+          <view class="form-picker">
+            <text class="picker-value">{{formDate || formattedSelectedDate}}</text>
+            <text class="picker-icon">📅</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 时间选择 -->
+      <view class="form-group">
+        <text class="form-label">执行时间段</text>
+        <!-- 快捷时间选择 -->
+        <view class="quick-time-grid">
+          <view
+            wx:for="{{quickTimes}}"
+            wx:key="label"
+            class="quick-time-item {{formQuickTime === item.label ? 'selected' : ''}}"
+            data-time="{{item}}"
+            bindtap="selectQuickTime"
+          >
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-group half">
+            <picker mode="time" value="{{formStartTime}}" bindchange="onStartTimeChange">
+              <view class="form-picker small">
+                <text>{{formStartTime}}</text>
+              </view>
+            </picker>
+          </view>
+          <view class="time-separator">
+            <text>至</text>
+          </view>
+          <view class="form-group half">
+            <picker mode="time" value="{{formEndTime}}" bindchange="onEndTimeChange">
+              <view class="form-picker small">
+                <text>{{formEndTime}}</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+      </view>
+
+      <!-- 任务类型 -->
+      <view class="form-group">
+        <text class="form-label">任务类型</text>
+        <view class="type-grid">
+          <view
+            wx:for="{{taskTypes}}"
+            wx:key="id"
+            class="type-item {{formType === item.id ? 'selected' : ''}}"
+            data-type="{{item.id}}"
+            bindtap="selectType"
+            style="background-color: {{formType === item.id ? item.active : item.inactive}}; color: {{formType === item.id ? '#ffffff' : item.active}}"
+          >
+            <text class="type-icon">{{item.icon}}</text>
+            <text class="type-label">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 指派成员 -->
+      <view class="form-group">
+        <text class="form-label">指派成员</text>
+        <scroll-view scroll-y="true" class="assignee-scroll">
+          <view class="assignee-grid">
+            <view
+              wx:for="{{deptMembers}}"
+              wx:key="id"
+              class="assignee-item {{formAssignee === item.name ? 'selected' : ''}}"
+              data-member="{{item}}"
+              bindtap="selectAssignee"
+            >
+              <view class="assignee-avatar">
+                <text wx:if="{{item.isDept}}" class="avatar-icon">👥</text>
+                <text wx:else class="avatar-icon">👤</text>
+              </view>
+              <view class="assignee-info">
+                <text class="assignee-name">{{item.name}}</text>
+                <text wx:if="{{item.isDept}}" class="assignee-tag">全体</text>
+              </view>
+              <view wx:if="{{formAssignee === item.name}}" class="assignee-check">✓</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 任务备注 -->
+      <view class="form-group">
+        <text class="form-label">备注说明（选填）</text>
+        <textarea
+          class="form-textarea"
+          value="{{formRemark}}"
+          data-field="formRemark"
+          bindinput="onInputChange"
+          placeholder="请输入任务备注或特殊说明..."
+          maxlength="200"
+          auto-height
+        />
+      </view>
+    </scroll-view>
+
+    <view class="modal-footer">
+      <view class="modal-btn secondary" bindtap="closeModal">
+        <text>取消</text>
+      </view>
+      <view class="modal-btn primary" bindtap="createTask">
+        <text>发布任务</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>水手校园精细化管理平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'Noto Sans SC', 'sans-serif']
+            },
+            colors: {
+              primary: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+                900: '#1e3a8a'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      @keyframes toast-in {
+        from { opacity: 0; transform: translateX(100%) scale(0.95); }
+        to { opacity: 1; transform: translateX(0) scale(1); }
+      }
+      @keyframes toast-out {
+        from { opacity: 1; transform: translateX(0) scale(1); }
+        to { opacity: 0; transform: translateX(100%) scale(0.95); }
+      }
+      @keyframes overlay-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes overlay-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      @keyframes modal-in {
+        from { opacity: 0; transform: scale(0.9) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      @keyframes modal-out {
+        from { opacity: 1; transform: scale(1) translateY(0); }
+        to { opacity: 0; transform: scale(0.9) translateY(20px); }
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(6px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+      }
+      .animate-toast-in { animation: toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+      .animate-toast-out { animation: toast-out 0.25s ease-in forwards; }
+      .animate-overlay-in { animation: overlay-in 0.2s ease-out forwards; }
+      .animate-overlay-out { animation: overlay-out 0.2s ease-in forwards; }
+      .animate-modal-in { animation: modal-in 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+      .animate-modal-out { animation: modal-out 0.2s ease-in forwards; }
+      .animate-shake { animation: shake 0.4s ease-in-out; }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.10.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "axios": "https://esm.sh/axios@^1.13.2"
+  }
+}
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

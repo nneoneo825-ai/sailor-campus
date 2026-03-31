@@ -1,0 +1,283 @@
+<!-- 主页面 -->
+<view class="container" wx:if="{{activeView === 'main'}}">
+  <!-- 用户信息头部 -->
+  <view class="header-section">
+    <view class="avatar-container">
+      <image class="avatar-image" src="{{userInfo.avatar}}" mode="aspectFill"></image>
+    </view>
+    <text class="user-name">{{userInfo.name}}</text>
+    <view class="user-tags">
+      <text class="user-tag role-tag">{{userInfo.role}}</text>
+      <text class="user-tag dept-tag">{{userInfo.dept}}</text>
+    </view>
+    
+    <!-- 未登录显示登录按钮 -->
+    <view wx:if="{{!isLoggedIn}}" class="login-prompt">
+      <button class="login-prompt-btn" bindtap="goToLogin">
+        <text>点击登录</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 统计数据 -->
+  <view class="stats-section">
+    <view class="stat-item">
+      <text class="stat-number">{{recordCount || 128}}</text>
+      <text class="stat-label">累计巡查</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-number">{{completionRate}}%</text>
+      <text class="stat-label">任务完成率</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-section">
+    <view class="menu-item" wx:for="{{menuItems}}" wx:key="id" data-id="{{item.id}}" bindtap="onMenuClick">
+      <text class="menu-icon">{{item.icon}}</text>
+      <text class="menu-label">{{item.label}}</text>
+      <view class="menu-right">
+        <text class="menu-count" wx:if="{{item.count && item.count !== '0'}}">{{item.count}}</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="onLogout">
+      <text class="logout-icon">🚪</text>
+      退出登录
+    </button>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text>EDUINSPECT MOBILE v1.2.0</text>
+  </view>
+</view>
+
+<!-- 我的提交页面 -->
+<view class="sub-page" wx:if="{{activeView === 'submissions'}}">
+  <view class="sub-header">
+    <view class="back-btn" bindtap="onBackToMain">
+      <text class="back-icon">←</text>
+    </view>
+    <text class="sub-title">我的提交</text>
+  </view>
+
+  <view class="submissions-list" wx:if="{{submissions.length > 0}}">
+    <view class="submission-item" wx:for="{{submissions}}" wx:key="id">
+      <view class="submission-header">
+        <view class="type-badge type-{{item.typeClass}}">
+          <text>{{item.typeLabel}}</text>
+        </view>
+        <text class="submission-title">{{item.target}}</text>
+      </view>
+      <view class="submission-location" wx:if="{{item.locationInfo}}">
+        <text class="location-icon">📍</text>
+        <text class="location-text">{{item.locationInfo}}</text>
+      </view>
+      <text class="submission-category">{{item.category}} - {{item.item}}</text>
+      <view class="submission-footer">
+        <text class="submission-time">{{item.formattedTime}}</text>
+        <text class="submission-detail">查看详情</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <text class="empty-icon">📄</text>
+    <text class="empty-text">暂无提交记录</text>
+  </view>
+</view>
+
+<!-- 部门信息页面 -->
+<view class="sub-page" wx:if="{{activeView === 'dept'}}">
+  <view class="sub-header">
+    <view class="back-btn" bindtap="onBackToMain">
+      <text class="back-icon">←</text>
+    </view>
+    <text class="sub-title">部门信息</text>
+  </view>
+
+  <view class="dept-card">
+    <view class="dept-avatar">
+      <text class="dept-icon">🛡️</text>
+    </view>
+    <text class="dept-name">{{deptInfo.name}}</text>
+    <text class="dept-desc">{{deptInfo.description}}</text>
+  </view>
+
+  <view class="members-section">
+    <text class="section-title">成员 ({{deptInfo.memberCount}}人)</text>
+    <view wx:if="{{deptMembers.length === 0}}" class="empty-state">
+      <text class="empty-text">暂无成员信息</text>
+    </view>
+    <view wx:else>
+      <view class="member-item" wx:for="{{deptMembers}}" wx:key="id">
+        <image class="member-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+        <view class="member-info">
+          <text class="member-name">{{item.name}}</text>
+          <text class="member-role">{{item.role}}</text>
+        </view>
+        <text class="member-status" wx:if="{{item.active}}">当前登录</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 消息通知页面 -->
+<view class="sub-page" wx:if="{{activeView === 'notifications'}}">
+  <view class="sub-header">
+    <view class="header-content">
+      <view class="back-btn" bindtap="onBackToMain">
+        <text class="back-icon">←</text>
+      </view>
+      <text class="sub-title">消息通知</text>
+    </view>
+    <text class="ignore-all" bindtap="onIgnoreAllNotifications">全部忽略</text>
+  </view>
+
+  <view class="notifications-list">
+    <view class="notification-item {{item.unread ? 'unread' : ''}}" wx:for="{{notifications}}" wx:key="index">
+      <view class="notification-dot" wx:if="{{item.unread}}"></view>
+      <view class="notification-icon">
+        <text>{{item.icon}}</text>
+      </view>
+      <view class="notification-content">
+        <text class="notification-title">{{item.title}}</text>
+        <text class="notification-desc">{{item.desc}}</text>
+        <text class="notification-time">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 系统设置页面 -->
+<view class="sub-page" wx:if="{{activeView === 'settings'}}">
+  <view class="sub-header">
+    <view class="back-btn" bindtap="onBackToMain">
+      <text class="back-icon">←</text>
+    </view>
+    <text class="sub-title">系统设置</text>
+  </view>
+
+  <view class="settings-section">
+    <text class="section-title">账号安全</text>
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🔒</text>
+        <text class="setting-label">修改登录密码</text>
+      </view>
+      <text class="setting-arrow">›</text>
+    </view>
+    <view class="setting-item" bindtap="onWechatBindTap">
+      <view class="setting-left">
+        <text class="setting-icon">💬</text>
+        <text class="setting-label">微信绑定</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value {{wechatBound ? 'bound' : 'unbound'}}">{{wechatBound ? '已绑定' : '未绑定'}}</text>
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+    <view class="setting-item" wx:if="{{wechatBound}}" bindtap="onUnbindWechat">
+      <view class="setting-left">
+        <text class="setting-icon">🔗</text>
+        <text class="setting-label">解绑微信</text>
+      </view>
+      <text class="setting-arrow" style="color: #ef4444;">解绑</text>
+    </view>
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">📱</text>
+        <text class="setting-label">绑定手机号</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value">138****8888</text>
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="settings-section">
+    <text class="section-title">通用设置</text>
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🔔</text>
+        <text class="setting-label">消息推送</text>
+      </view>
+      <switch class="setting-switch" checked="{{pushEnabled}}" bindchange="onTogglePush"></switch>
+    </view>
+    <view class="setting-item" bindtap="onClearCache">
+      <view class="setting-left">
+        <text class="setting-icon">🗑️</text>
+        <text class="setting-label">清理本地缓存</text>
+      </view>
+      <text class="setting-value">2.4 MB</text>
+    </view>
+  </view>
+
+  <view class="settings-section">
+    <text class="section-title">关于应用</text>
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🛡️</text>
+        <text class="setting-label">隐私政策与协议</text>
+      </view>
+      <text class="setting-arrow">›</text>
+    </view>
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">ℹ️</text>
+        <text class="setting-label">当前版本</text>
+      </view>
+      <text class="setting-value">v1.2.0</text>
+    </view>
+  </view>
+</view>
+
+<!-- 帮助与反馈页面 -->
+<view class="sub-page" wx:if="{{activeView === 'help'}}">
+  <view class="sub-header">
+    <view class="back-btn" bindtap="onBackToMain">
+      <text class="back-icon">←</text>
+    </view>
+    <text class="sub-title">帮助与反馈</text>
+  </view>
+
+  <view class="help-section">
+    <text class="section-title">常见问题</text>
+    <view class="faq-item" wx:for="{{faqItems}}" wx:key="index">
+      <text class="faq-text">{{item}}</text>
+      <text class="faq-arrow">›</text>
+    </view>
+  </view>
+
+  <view class="feedback-section">
+    <text class="section-title">意见反馈</text>
+    <textarea class="feedback-input" placeholder="请描述您遇到的问题或建议，我们会不断改进..." value="{{feedbackText}}" bindinput="onFeedbackInput"></textarea>
+    <button class="feedback-submit" bindtap="onSubmitFeedback" disabled="{{!feedbackText.trim()}}">
+      <text class="submit-icon">📤</text>
+      提交反馈
+    </button>
+  </view>
+
+  <view class="contact-section">
+    <text class="section-title">联系我们</text>
+    <view class="contact-grid">
+      <view class="contact-item">
+        <view class="contact-icon phone-icon">📞</view>
+        <text class="contact-title">客服电话</text>
+        <text class="contact-value">18888646887</text>
+      </view>
+      <view class="contact-item">
+        <view class="contact-icon mail-icon">📧</view>
+        <text class="contact-title">官方邮箱</text>
+        <text class="contact-value">nanpuqing@hltz.cn</text>
+      </view>
+    </view>
+  </view>
+</view>

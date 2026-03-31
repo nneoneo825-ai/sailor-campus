@@ -1,0 +1,99 @@
+<view class="container">
+  <!-- 顶部问候 -->
+  <view class="header">
+    <view class="greeting">
+      <text class="title">{{greeting}}，{{userName}}</text>
+      <text class="subtitle">今日巡查校区：{{campus}}</text>
+    </view>
+    <view class="notification" bindtap="onNotificationTap">
+      <text class="iconfont">🔔</text>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-entries">
+    <view 
+      wx:for="{{quickEntries}}" 
+      wx:key="id" 
+      class="entry-item"
+      data-type="{{item.id}}"
+      bindtap="navigateToInspect"
+    >
+      <view class="entry-icon" style="background-color: {{item.color}}20; color: {{item.color}}">
+        <text class="iconfont">{{item.id === 'MORAL' ? '📋' : item.id === 'TEACHING' ? '📖' : item.id === 'DORM' ? '🏠' : '📊'}}</text>
+      </view>
+      <text class="entry-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- 今日日程 -->
+  <view class="section">
+    <view class="section-header">
+      <view class="section-title">
+        <text>今日日程</text>
+        <text class="badge">{{taskCount}}项任务</text>
+      </view>
+      <view class="section-actions">
+        <view class="action-btn primary" bindtap="onAddTask">
+          <text class="iconfont">➕</text>
+          <text>发布</text>
+        </view>
+        <view class="action-btn" bindtap="navigateToSchedule">
+          <text>查看全表</text>
+          <text class="iconfont">›</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="task-list">
+      <view 
+        wx:for="{{tasks}}" 
+        wx:key="id" 
+        class="task-item"
+        bindtap="onTaskTap"
+      >
+        <text class="status-icon">{{item.status === 'completed' ? '✓' : '○'}}</text>
+        <view class="task-content">
+          <text class="task-title {{item.status === 'completed' ? 'completed' : ''}}">{{item.title}}</text>
+          <text class="task-time">{{item.time}} 计划</text>
+        </view>
+        <text class="iconfont arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最新检查记录 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">最新检查记录</text>
+      <text class="link-text" bindtap="navigateToStats">统计明细</text>
+    </view>
+    
+    <view wx:if="{{recentRecords.length === 0}}" class="empty-state">
+      <text>暂无记录，开启今日检查吧</text>
+    </view>
+    
+    <view wx:else class="record-list">
+      <view
+        wx:for="{{recentRecords}}"
+        wx:key="id"
+        class="record-item card"
+      >
+        <view class="record-icon {{item.type === 'TEACHING' ? 'teaching' : item.type === 'DORM' ? 'dorm' : ''}}">
+          <text class="iconfont">{{item.type === 'TEACHING' ? '📖' : item.type === 'DORM' ? '🏠' : '📋'}}</text>
+        </view>
+        <view class="record-content">
+          <view class="record-header">
+            <text class="record-type">{{item.typeName}}</text>
+            <text class="record-target" wx:if="{{item.gradeName || item.className}}">{{item.gradeName}} {{item.className}} · {{item.target}}</text>
+            <text class="record-target" wx:else>{{item.target}}</text>
+            <text class="record-time">{{item.timestamp}}</text>
+          </view>
+          <text class="record-detail" wx:if="{{item.majorCategory || item.minorCategory}}">{{item.majorCategory}} {{item.minorCategory ? '· ' + item.minorCategory : ''}} {{item.content ? '· ' + item.content : ''}}</text>
+          <text class="record-detail" wx:else>{{item.content}}</text>
+          <text class="record-score {{item.scoreChange >= 0 ? 'positive' : 'negative'}}">{{item.scoreChange >= 0 ? '+' : ''}}{{item.scoreChange}}分</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
