@@ -5,9 +5,9 @@ import os
 import subprocess
 
 # 远程数据库配置
-DB_USER = "root"
+DB_USER = "sailor"
 DB_PASSWORD = "nanpuqing666"
-DB_HOST = "39.97.35.83"
+DB_HOST = "8.136.38.177"
 DB_PORT = 3306
 DB_NAME = "sailor_campus"
 

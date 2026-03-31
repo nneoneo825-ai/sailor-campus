@@ -94,7 +94,7 @@ log_info "MySQL 配置完成 (数据库: sailor_campus)"
 log_step "===== 步骤 3/9: 创建目录结构 ====="
 
 # 创建运行用户
-id -u "${DEPLOY_USER}" &>/dev/null || useradd -r -s /sbin/nologin "${DEPLOY_USER}"
+id -u "${DEPLOY_USER}" &>/dev/null || useradd -r -s /sbin/nologin -m "${DEPLOY_USER}"
 
 # 创建目录
 mkdir -p "${APP_DIR}" "${FRONTEND_DIR}" "${BACKEND_DIR}" "${LOG_DIR}"
