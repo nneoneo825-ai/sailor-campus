@@ -113,8 +113,16 @@ if [ -d "${TEMP_DIR}/backend" ]; then
         source "${BACKEND_DIR}/venv/bin/activate"
         pip install -r "${BACKEND_DIR}/requirements.txt" -q
         deactivate
+        log_info "依赖已更新"
     else
-        log_error "虚拟环境不存在，跳过依赖安装。请手动创建: python3.11 -m venv ${BACKEND_DIR}/venv"
+        log_warn "虚拟环境不存在，正在创建..."
+        python3 -m venv "${BACKEND_DIR}/venv"
+        source "${BACKEND_DIR}/venv/bin/activate"
+        pip install --upgrade pip -q
+        pip install -r "${BACKEND_DIR}/requirements.txt" -q
+        pip install gunicorn -q
+        deactivate
+        log_info "虚拟环境已创建并安装依赖"
     fi
 
     rm -rf "${BACKUP_DIR}"
@@ -133,15 +141,32 @@ fi
 # ----------------------------------------------------------
 log_step "===== 步骤 4/5: 重启服务 ====="
 
-log_info "重启后端服务..."
-supervisorctl restart sailor-backend
-sleep 2
+# 检查/修复 supervisor 配置
+SUPERVISOR_CONF="/etc/supervisord.d/sailor-campus.ini"
+if [ ! -f "${SUPERVISOR_CONF}" ] && [ -f "${TEMP_DIR}/deploy/supervisor/sailor-campus.ini" ]; then
+    log_warn "Supervisor 配置不存在，正在创建..."
+    mkdir -p /etc/supervisord.d
+    cp "${TEMP_DIR}/deploy/supervisor/sailor-campus.ini" "${SUPERVISOR_CONF}"
+    supervisorctl reread
+    supervisorctl update
+    log_info "Supervisor 配置已创建"
+elif [ -f "${SUPERVISOR_CONF}" ]; then
+    log_info "Supervisor 配置已存在，保持不变"
+fi
 
-if supervisorctl status sailor-backend | grep -q RUNNING; then
+# 确保日志目录存在
+mkdir -p "${LOG_DIR}"
+
+log_info "重启后端服务..."
+supervisorctl restart sailor-backend 2>/dev/null || supervisorctl start sailor-backend 2>/dev/null
+sleep 3
+
+if supervisorctl status sailor-backend 2>/dev/null | grep -q RUNNING; then
     log_info "后端服务已启动"
 else
-    log_error "后端服务启动失败，请检查日志: ${LOG_DIR}/error.log"
-    supervisorctl tail sailor-backend stderr
+    log_error "后端服务启动失败，请检查日志:"
+    log_error "  supervisorctl tail sailor-backend stderr"
+    log_error "  tail -f ${LOG_DIR}/stderr.log"
 fi
 
 log_info "重载 Nginx..."
