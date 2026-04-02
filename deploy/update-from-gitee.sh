@@ -116,7 +116,7 @@ if [ -d "${TEMP_DIR}/backend" ]; then
         log_info "依赖已更新"
     else
         log_warn "虚拟环境不存在，正在创建..."
-        python3 -m venv "${BACKEND_DIR}/venv"
+        python3.11 -m venv "${BACKEND_DIR}/venv"
         source "${BACKEND_DIR}/venv/bin/activate"
         pip install --upgrade pip -q
         pip install -r "${BACKEND_DIR}/requirements.txt" -q
