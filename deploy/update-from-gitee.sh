@@ -88,29 +88,36 @@ fi
 log_step "===== 步骤 3/5: 更新后端代码 ====="
 
 if [ -d "${TEMP_DIR}/backend" ]; then
-    # 备份配置文件和虚拟环境
-    [ -f "${BACKEND_DIR}/.env" ] && cp "${BACKEND_DIR}/.env" "${BACKEND_DIR}/.env.bak"
-    [ -d "${BACKEND_DIR}/venv" ] && mv "${BACKEND_DIR}/venv" "${BACKEND_DIR}/venv.bak"
-    [ -d "${BACKEND_DIR}/__pycache__" ] && rm -rf "${BACKEND_DIR}/__pycache__"
+    # 备份配置文件和虚拟环境到临时目录（避免被 rm -rf * 删除）
+    BACKUP_DIR="/tmp/sailor-campus-backup-$$"
+    mkdir -p "${BACKUP_DIR}"
+    [ -f "${BACKEND_DIR}/.env" ] && cp "${BACKEND_DIR}/.env" "${BACKUP_DIR}/.env.bak"
+    [ -d "${BACKEND_DIR}/venv" ] && mv "${BACKEND_DIR}/venv" "${BACKUP_DIR}/venv.bak"
 
     # 清理并复制新代码
     rm -rf "${BACKEND_DIR}"/*
     cp -r "${TEMP_DIR}/backend/"* "${BACKEND_DIR}/"
 
     # 恢复配置文件
-    [ -f "${BACKEND_DIR}/.env.bak" ] && mv "${BACKEND_DIR}/.env.bak" "${BACKEND_DIR}/.env"
+    [ -f "${BACKUP_DIR}/.env.bak" ] && mv "${BACKUP_DIR}/.env.bak" "${BACKEND_DIR}/.env"
 
     # 恢复虚拟环境
-    if [ -d "${BACKEND_DIR}/venv.bak" ]; then
-        mv "${BACKEND_DIR}/venv.bak" "${BACKEND_DIR}/venv"
+    if [ -d "${BACKUP_DIR}/venv.bak" ]; then
+        mv "${BACKUP_DIR}/venv.bak" "${BACKEND_DIR}/venv"
         log_info "虚拟环境已保留"
     fi
 
     # 检查是否有新依赖需要安装
     log_info "检查 Python 依赖..."
-    source "${BACKEND_DIR}/venv/bin/activate"
-    pip install -r "${BACKEND_DIR}/requirements.txt" -q
-    deactivate
+    if [ -f "${BACKEND_DIR}/venv/bin/activate" ]; then
+        source "${BACKEND_DIR}/venv/bin/activate"
+        pip install -r "${BACKEND_DIR}/requirements.txt" -q
+        deactivate
+    else
+        log_error "虚拟环境不存在，跳过依赖安装。请手动创建: python3.11 -m venv ${BACKEND_DIR}/venv"
+    fi
+
+    rm -rf "${BACKUP_DIR}"
 
     chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${BACKEND_DIR}"
 
@@ -146,6 +153,7 @@ log_info "Nginx 已重载"
 # ----------------------------------------------------------
 log_step "===== 步骤 5/5: 清理 ====="
 rm -rf "${TEMP_DIR}"
+rm -rf "/tmp/sailor-campus-backup-*"
 log_info "临时文件已清理"
 
 echo ""
