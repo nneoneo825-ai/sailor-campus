@@ -2071,19 +2071,47 @@ async def get_school_students(
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     
-    # Get all class IDs under this school for filtering students
+    # Get all grades under this school (same 3-method approach as grades API)
+    # 方法1：直接查询 parent_id == school_id 的年级
+    grade_ids = set()
     all_grades = db.query(SysOrg).filter(
         SysOrg.parent_id == school_id,
         SysOrg.type == 'grade'
     ).all()
-    all_grade_ids = [g.id for g in all_grades]
+    for g in all_grades:
+        grade_ids.add(g.id)
+    
+    # 方法2：通过 tree_path 查询
+    path_grades = db.query(SysOrg).filter(
+        SysOrg.tree_path.like(f'%/{school.name}/%'),
+        SysOrg.type == 'grade'
+    ).all()
+    for g in path_grades:
+        grade_ids.add(g.id)
+    
+    # 方法3：递归查找（兜底）
+    def _find_grades_recursive(parent_id: int, visited: set = None) -> None:
+        if visited is None:
+            visited = set()
+        if parent_id in visited:
+            return
+        visited.add(parent_id)
+        children = db.query(SysOrg).filter(SysOrg.parent_id == parent_id).all()
+        for child in children:
+            if child.type == 'grade' and child.id not in grade_ids:
+                grade_ids.add(child.id)
+            elif child.type in ('dept', 'campus', 'department'):
+                _find_grades_recursive(child.id, visited)
+    
+    _find_grades_recursive(school_id)
+    
+    all_grade_ids = list(grade_ids)
     
     # 应用数据权限过滤年级
     if not scope.has_all:
         if scope.grade_ids:
             all_grade_ids = [gid for gid in all_grade_ids if gid in scope.grade_ids]
         elif scope.class_ids:
-            # 如果没有年级权限但有班级权限，从班级反推年级
             class_grade_ids = set()
             for class_id in scope.class_ids:
                 cls = db.query(SysOrg).filter(SysOrg.id == class_id).first()
@@ -2093,17 +2121,34 @@ async def get_school_students(
         else:
             all_grade_ids = []
     
+    # 获取年级下所有班级（也通过递归处理多层结构）
     all_class_ids = []
+    class_to_grade = {}  # class_id -> grade_id 映射
     for grade_id in all_grade_ids:
         classes = db.query(SysOrg).filter(
             SysOrg.parent_id == grade_id,
             SysOrg.type == "class"
         ).all()
-        all_class_ids.extend([c.id for c in classes])
+        for c in classes:
+            all_class_ids.append(c.id)
+            class_to_grade[c.id] = grade_id
     
     # 应用数据权限过滤班级
     if not scope.has_all and scope.class_ids:
         all_class_ids = [cid for cid in all_class_ids if cid in scope.class_ids]
+
+    # 预加载所有相关组织信息（避免 N+1 查询）
+    org_cache = {}
+    relevant_org_ids = set(all_grade_ids) | set(all_class_ids)
+    if relevant_org_ids:
+        for org in db.query(SysOrg).filter(SysOrg.id.in_(relevant_org_ids)).all():
+            org_cache[org.id] = org
+    
+    # 构建年级名映射
+    grade_name_map = {}
+    for gid in all_grade_ids:
+        if gid in org_cache:
+            grade_name_map[gid] = org_cache[gid].name
 
     # Query students: either they belong to a class in this school, or they have school_id but no class
     if all_class_ids:
@@ -2130,21 +2175,22 @@ async def get_school_students(
     
     result = []
     for student in students:
-        # Get class name
+        # Get class name from cache
         class_name = ""
-        if student.class_id:
-            cls = db.query(SysOrg).filter(SysOrg.id == student.class_id).first()
-            if cls:
-                class_name = cls.name
-        
-        # Get grade name
         grade_name = ""
         if student.class_id:
-            cls = db.query(SysOrg).filter(SysOrg.id == student.class_id).first()
+            cls = org_cache.get(student.class_id)
             if cls:
-                grade = db.query(SysOrg).filter(SysOrg.id == cls.parent_id).first()
-                if grade:
-                    grade_name = grade.name
+                class_name = cls.name
+            # Get grade name from cache (优先使用 class_to_grade 映射)
+            grade_id = class_to_grade.get(student.class_id)
+            if grade_id and grade_id in grade_name_map:
+                grade_name = grade_name_map[grade_id]
+            elif cls and cls.parent_id:
+                # 兜底：从 parent_id 查找
+                parent_grade = org_cache.get(cls.parent_id)
+                if parent_grade and parent_grade.type == 'grade':
+                    grade_name = parent_grade.name
         
         result.append({
             "id": student.student_no or str(student.id),  # 学号优先，若无学号则使用主键ID
