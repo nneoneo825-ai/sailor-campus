@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, text
 from io import BytesIO
 import csv
 import openpyxl
@@ -17,7 +17,7 @@ from app.models.org import SysOrg, BaseClassInfo, BaseTeacher, BaseClassTeacher
 from app.models.user import SysUser
 from app.models.role import SysRole
 from app.models.student import BaseStudent
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import get_user_data_scope
 from app.utils.auth import get_password_hash
 
@@ -243,7 +243,7 @@ async def get_schools_list(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get list of schools with statistics (filtered by user's data scope)
@@ -395,7 +395,7 @@ async def get_schools_list(
 async def get_school_detail(
     school_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get detailed information of a specific school (requires access to the school)
@@ -516,7 +516,7 @@ async def update_school(
     school_id: int,
     school_data: SchoolUpdate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Update school information (requires access to the school)
@@ -576,7 +576,7 @@ async def get_school_classes(
     grade_id: Optional[int] = Query(None, description="年级ID筛选"),
     keyword: Optional[str] = Query(None, description="关键词搜索"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get classes under a school with pagination
@@ -926,7 +926,7 @@ async def save_upgrade_settings(
     school_id: int,
     settings: UpgradeSettings,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Save upgrade settings for a school
@@ -968,7 +968,7 @@ async def save_upgrade_settings(
 async def get_upgrade_settings(
     school_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get upgrade settings for a school
@@ -995,7 +995,7 @@ async def batch_upgrade_classes(
     school_id: int,
     upgrade_data: BatchUpgradeRequest,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Batch upgrade classes to a new grade
@@ -1161,7 +1161,7 @@ async def batch_upgrade_classes(
 async def get_school_grades(
     school_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get all grades under a school (based on org hierarchy)
@@ -1316,7 +1316,7 @@ async def get_grade_classes(
     school_id: int,
     grade_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get all classes under a specific grade (based on org hierarchy)
@@ -1526,7 +1526,7 @@ async def get_all_teachers(
     grade: Optional[str] = Query(None, description="Filter by grade"),
     keyword: Optional[str] = Query(None, description="Search by name or phone"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get all teachers (filtered by user's data scope)
@@ -1604,7 +1604,7 @@ async def get_school_teachers(
     grade: Optional[str] = Query(None, description="Filter by grade"),
     keyword: Optional[str] = Query(None, description="Search by name or phone"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get all teachers under a school from base_teacher table (requires access to the school)
@@ -1705,7 +1705,7 @@ async def create_class(
     school_id: int,
     class_data: ClassCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Create a new class under a school
@@ -1813,14 +1813,12 @@ async def update_class(
     class_id: int,
     class_data: ClassUpdate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Update class information (head teacher)
     """
     _check_school_write_permission(db, current_user, school_id)
-    Update class information (head teacher)
-    """
     # Verify school exists
     school = db.query(SysOrg).filter(
         SysOrg.id == school_id,
@@ -2019,7 +2017,7 @@ async def get_school_students(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get all students under a school
@@ -2178,13 +2176,12 @@ async def update_class_seating_chart(
     class_id: int,
     seating_data: dict,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
-) -> Any:
-    _check_school_write_permission(db, current_user, school_id)
+    current_user: Any = Depends(require_permission("school:edit"))
 ) -> Any:
     """
     Update class seating chart
     """
+    _check_school_write_permission(db, current_user, school_id)
     # Verify school exists
     school = db.query(SysOrg).filter(
         SysOrg.id == school_id,
@@ -2233,7 +2230,7 @@ async def update_class_seating_chart(
 @router.get("/teachers/import-template")
 async def download_teacher_import_template(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ):
     """
     下载教师批量导入模板
@@ -2335,7 +2332,7 @@ async def download_teacher_import_template(
 async def import_teachers(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teacher:edit"))
 ):
     """
     批量导入教师
@@ -2511,7 +2508,7 @@ class TeacherUpdate(BaseModel):
 async def create_teacher(
     teacher_data: TeacherCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teacher:edit"))
 ) -> Any:
     """
     Create a new teacher record and automatically create a system user account
@@ -2569,7 +2566,7 @@ async def create_teacher(
 async def get_teacher_detail(
     teacher_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get detailed information of a specific teacher, including teaching classes
@@ -2629,7 +2626,7 @@ async def update_teacher(
     teacher_id: int,
     teacher_data: TeacherUpdate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teacher:edit"))
 ) -> Any:
     """
     Update teacher information
@@ -2774,7 +2771,7 @@ async def update_teacher(
 async def delete_teacher(
     teacher_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teacher:delete"))
 ) -> Any:
     """
     Delete a teacher (soft delete by setting deleted_at, requires access to teacher's school)
@@ -2796,7 +2793,7 @@ async def delete_teacher(
         user = db.query(SysUser).filter(SysUser.id == teacher.user_id).first()
         if user:
             # 删除用户角色关联
-            db.execute("DELETE FROM sys_user_role WHERE user_id = :user_id", {"user_id": user.id})
+            db.execute(text("DELETE FROM sys_user_role WHERE user_id = :user_id"), {"user_id": user.id})
             # 删除用户
             db.delete(user)
 
@@ -2814,7 +2811,7 @@ async def delete_teacher(
 async def get_teacher_filter_options(
     school_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ) -> Any:
     """
     Get filter options for teachers (positions and subjects)
@@ -2877,7 +2874,7 @@ class StudentBatchImport(BaseModel):
 async def import_students_batch(
     data: StudentBatchImport,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:import"))
 ) -> Any:
     """
     批量导入学生到指定班级
@@ -3020,7 +3017,7 @@ async def import_students_batch(
 @router.get("/students/import-template")
 async def download_student_import_template(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("school:view"))
 ):
     """
     下载学生批量导入模板

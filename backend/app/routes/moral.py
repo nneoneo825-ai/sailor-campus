@@ -10,7 +10,7 @@ from app.models.moral import CfgMoralIndicator, CfgTeachingIndicator, BizMoralRe
 from app.models.org import SysOrg
 from app.models.student import BaseStudent as Student
 from app.models.org import BaseClassInfo
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.models.user import SysUser
 from app.utils.data_scope import get_user_data_scope
 from app.utils.log_helper import log_operation, MODULE_MORAL, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE
@@ -82,7 +82,7 @@ async def get_moral_indicators(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get moral education indicators with pagination and filters
@@ -134,7 +134,7 @@ async def get_moral_indicators(
 @router.get("/indicators/categories")
 async def get_moral_categories(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get all unique categories for moral indicators
@@ -147,7 +147,7 @@ async def get_moral_categories(
 async def get_moral_indicators_report_structure(
     org_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get moral indicators structured for report display
@@ -216,7 +216,7 @@ async def get_moral_indicators_report_structure(
 async def create_moral_indicator(
     data: MoralIndicatorCreate = Body(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:moral_indicator"))
 ) -> Any:
     """
     Create a new moral education indicator
@@ -247,7 +247,7 @@ async def update_moral_indicator(
     indicator_id: int,
     data: MoralIndicatorUpdate = Body(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:moral_indicator"))
 ) -> Any:
     """
     Update a moral education indicator
@@ -282,7 +282,7 @@ async def update_moral_indicator(
 async def delete_moral_indicator(
     indicator_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:moral_indicator"))
 ) -> Any:
     """
     Delete a moral education indicator
@@ -302,7 +302,7 @@ async def create_moral_record(
     record: MoralRecordCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Create a moral education record
@@ -468,7 +468,7 @@ async def create_moral_records_batch(
     batch_data: MoralRecordsBatchCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Batch create moral education records for multiple students
@@ -678,7 +678,7 @@ async def get_moral_records(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get moral education records (filtered by user's data scope)
@@ -815,7 +815,7 @@ async def get_moral_records(
 @router.get("/stats/dashboard")
 async def get_dashboard_stats(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get dashboard statistics for moral education
@@ -852,7 +852,7 @@ async def get_teaching_indicators(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get teaching indicators with pagination and filters
@@ -901,7 +901,7 @@ async def get_teaching_indicators(
 @router.get("/teaching-indicators/categories")
 async def get_teaching_categories(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get all unique categories for teaching indicators
@@ -914,7 +914,7 @@ async def get_teaching_categories(
 async def get_all_teaching_indicators(
     org_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     Get all enabled teaching indicators (no pagination)
@@ -951,7 +951,7 @@ async def get_all_teaching_indicators(
 async def create_teaching_indicator(
     data: TeachingIndicatorCreate = Body(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:teaching_indicator"))
 ) -> Any:
     """
     Create a new teaching indicator
@@ -981,7 +981,7 @@ async def update_teaching_indicator(
     indicator_id: int,
     data: TeachingIndicatorUpdate = Body(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:teaching_indicator"))
 ) -> Any:
     """
     Update a teaching indicator
@@ -1014,7 +1014,7 @@ async def update_teaching_indicator(
 async def delete_teaching_indicator(
     indicator_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:teaching_indicator"))
 ) -> Any:
     """
     Delete a teaching indicator
@@ -1038,12 +1038,18 @@ async def get_class_report(
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     category: Optional[str] = Query(None, description="筛选类别: moral, intellect, physical, artistic, labor"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取班级德育量化报表数据
     """
+    # 数据权限校验：验证用户是否有权访问该班级
+    scope = get_user_data_scope(db, current_user)
     import logging
+    logging.info(f"[班级报表权限校验] user={current_user.username}, class_id={class_id}, scope.has_all={scope.has_all}, scope.class_ids={scope.class_ids}, scope.grade_ids={scope.grade_ids}, scope.school_ids={scope.school_ids}")
+    if not scope.has_all and class_id not in scope.class_ids:
+        raise HTTPException(status_code=403, detail="无权限访问该班级数据")
+
     logging.info(f"[班级报表API] 接收参数: class_id={class_id}, start_date={start_date}, end_date={end_date}, category={category}")
 
     # 默认查询最近30天
@@ -1271,7 +1277,7 @@ async def get_grade_report(
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     category: Optional[str] = Query(None, description="筛选类别: moral, intellect, physical, artistic, labor"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:grade"))
 ) -> Any:
     """
     获取年级德育量化报表数据 - 支持动态指标
@@ -1502,7 +1508,7 @@ async def get_school_report(
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     category: Optional[str] = Query(None, description="筛选类别: moral, intellect, physical, artistic, labor"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:school"))
 ) -> Any:
     """
     获取学校德育量化报表数据 - 汇总各年级的五育数据
@@ -1760,7 +1766,7 @@ async def get_district_report(
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:district"))
 ) -> Any:
     """
     获取学区德育量化报表数据 - 汇总各学校的五育数据
@@ -2154,7 +2160,7 @@ async def get_district_detail(
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:district"))
 ) -> Any:
     """
     获取学区德育量化详情 - 返回详细的扣分记录
@@ -2329,7 +2335,7 @@ async def save_moral_grade_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:grade"))
 ) -> Any:
     """保存年级德育评价"""
     existing = db.query(MoralGradeEvaluation).filter(
@@ -2364,7 +2370,7 @@ async def get_moral_grade_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:grade"))
 ) -> Any:
     """获取年级德育评价"""
     evaluation = db.query(MoralGradeEvaluation).filter(
@@ -2406,7 +2412,7 @@ async def save_moral_school_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:school"))
 ) -> Any:
     """保存校级德育评价"""
     existing = db.query(MoralSchoolEvaluation).filter(
@@ -2441,7 +2447,7 @@ async def get_moral_school_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:school"))
 ) -> Any:
     """获取校级德育评价"""
     evaluation = db.query(MoralSchoolEvaluation).filter(
@@ -2483,7 +2489,7 @@ async def save_moral_dorm_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """保存宿舍德育评价"""
     existing = db.query(MoralDormEvaluation).filter(
@@ -2518,7 +2524,7 @@ async def get_moral_dorm_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """获取宿舍德育评价"""
     evaluation = db.query(MoralDormEvaluation).filter(
@@ -2560,7 +2566,7 @@ async def save_moral_district_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:district"))
 ) -> Any:
     """保存学区德育评价"""
     existing = db.query(MoralDistrictEvaluation).filter(
@@ -2595,7 +2601,7 @@ async def get_moral_district_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:district"))
 ) -> Any:
     """获取学区德育评价"""
     evaluation = db.query(MoralDistrictEvaluation).filter(

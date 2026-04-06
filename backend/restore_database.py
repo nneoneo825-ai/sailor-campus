@@ -5,14 +5,14 @@ import os
 import subprocess
 
 # 远程数据库配置
-DB_USER = "sailor"
-DB_PASSWORD = "nanpuqing666"
-DB_HOST = "8.136.38.177"
-DB_PORT = 3306
-DB_NAME = "sailor_campus"
+DB_USER = "nanpuqing"
+DB_PASSWORD = "Nanpuqing@123"
+DB_HOST = "bj-cdb-5k00nvym.sql.tencentcdb.com"
+DB_PORT = 26737
+DB_NAME = "nanpuqin"
 
 # SQL 备份文件路径
-SQL_FILE = os.path.join(os.path.dirname(__file__), "backups", "sailor_campus_20260317_202654.sql")
+SQL_FILE = os.path.join(os.path.dirname(__file__), "backups", "sailor_campus_20260406_194521.sql")
 
 def restore_with_mysql():
     """使用 mysql 命令导入"""

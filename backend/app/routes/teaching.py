@@ -9,7 +9,7 @@ from app.database import get_db, Base
 from app.models.moral import CfgTeachingIndicator, BizTeachingRecord
 from app.models.user import SysUser
 from app.models.org import SysOrg, BaseTeacher, BaseClassTeacher
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import get_user_data_scope
 from app.utils.log_helper import log_operation, MODULE_TEACHING, ACTION_CREATE
 
@@ -339,7 +339,7 @@ async def get_teaching_indicators(
     org_id: int = None,
     major_category: str = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get teaching indicators
@@ -376,7 +376,7 @@ async def get_teaching_indicators(
 async def get_major_categories(
     org_id: int = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get all unique major categories from teaching indicators
@@ -400,7 +400,7 @@ async def get_major_categories(
 async def get_teaching_indicators_structure(
     org_id: int = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get teaching indicators structured for miniprogram display
@@ -448,7 +448,7 @@ async def create_teaching_indicator(
     major_category: str,
     org_id: int = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:teaching_indicator"))
 ) -> Any:
     """
     Create a new teaching indicator
@@ -482,7 +482,7 @@ async def update_teaching_indicator(
     org_id: int = None,
     is_enabled: int = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:teaching_indicator"))
 ) -> Any:
     """
     Update a teaching indicator
@@ -520,7 +520,7 @@ async def get_teaching_records(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get teaching evaluation records with pagination (filtered by user's data scope)
@@ -729,7 +729,7 @@ async def create_teaching_record(
     record_data: TeachingRecordCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Create a new teaching evaluation record
@@ -779,7 +779,7 @@ async def create_teaching_records_batch(
     data: dict,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Batch create teaching evaluation records
@@ -838,7 +838,7 @@ async def get_personal_teaching_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get personal teaching evaluation report
@@ -972,7 +972,7 @@ async def get_grade_teaching_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:grade"))
 ) -> Any:
     """
     Get grade teaching evaluation report
@@ -1038,7 +1038,7 @@ async def get_grade_teaching_report_details(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:grade"))
 ) -> Any:
     """
     Get grade teaching evaluation report details (for detail view)
@@ -1183,7 +1183,7 @@ async def export_grade_teaching_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:export"))
 ) -> Any:
     """
     Export grade teaching evaluation report as XLSX data
@@ -1295,7 +1295,7 @@ async def save_grade_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:grade"))
 ) -> Any:
     """
     Save grade teaching evaluation
@@ -1343,7 +1343,7 @@ async def get_grade_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:grade"))
 ) -> Any:
     """
     Get grade teaching evaluation
@@ -1380,7 +1380,7 @@ async def get_school_teaching_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:school"))
 ) -> Any:
     """
     Get school teaching evaluation report
@@ -1594,7 +1594,7 @@ async def get_school_teaching_report_details(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:school"))
 ) -> Any:
     """
     Get school teaching evaluation report details (for detail view)
@@ -1788,7 +1788,7 @@ async def save_school_evaluation(
     end_date: str,
     evaluation: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:school"))
 ) -> Any:
     """
     Save school teaching evaluation
@@ -1836,7 +1836,7 @@ async def get_school_evaluation(
     start_date: str,
     end_date: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:school"))
 ) -> Any:
     """
     Get school teaching evaluation
@@ -1873,7 +1873,7 @@ async def get_provincial_teaching_report(
     end_date: Optional[str] = None,
     school_ids: Optional[str] = Query(None, description="学校ID列表，逗号分隔"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:provincial"))
 ) -> Any:
     """
     Get provincial teaching evaluation report
@@ -2087,7 +2087,7 @@ async def get_provincial_teaching_report_details(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:provincial"))
 ) -> Any:
     """
     Get provincial teaching evaluation report details
@@ -2360,7 +2360,7 @@ async def get_provincial_teaching_report_details(
 @router.get("/stats/dashboard")
 async def get_teaching_stats_dashboard(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("teaching:personal"))
 ) -> Any:
     """
     Get teaching statistics for dashboard

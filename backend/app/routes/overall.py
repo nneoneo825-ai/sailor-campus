@@ -7,7 +7,7 @@ from app.database import get_db, Base
 from app.models.user import SysUser
 from app.models.org import SysOrg
 from app.models.moral import CfgMoralIndicator, CfgTeachingIndicator, BizMoralRecord, BizTeachingRecord, BizOverallRecord
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 
 
 # ==================== Pydantic模型 ====================
@@ -55,7 +55,7 @@ def get_grade_name_by_class_id(db: Session, class_id: int) -> str:
 async def get_overall_indicators(
     check_type: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取整体检查指标
@@ -228,7 +228,7 @@ async def get_overall_indicators(
 async def create_overall_record(
     record: OverallRecordCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     创建整体检查记录
@@ -392,7 +392,7 @@ async def create_overall_record(
 async def create_overall_records_batch(
     data: dict,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     批量创建整体检查记录
@@ -648,7 +648,7 @@ async def get_overall_records(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取整体检查记录列表
@@ -698,7 +698,7 @@ async def get_overall_records(
 async def get_target_classes(
     org_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取班级列表（用于班级检查）
@@ -727,7 +727,7 @@ async def get_target_classes(
 async def get_target_subjects(
     school_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取学科组列表（用于学科检查）

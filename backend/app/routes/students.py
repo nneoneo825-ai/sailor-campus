@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.student import BaseStudent
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import DataScope, filter_query_by_scope
 from app.models.user import SysUser
 
@@ -39,7 +39,7 @@ async def get_students(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:view"))
 ) -> Any:
     """
     Get all students (filtered by user's data scope)
@@ -72,7 +72,7 @@ async def get_students(
 async def create_student(
     student_data: StudentCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:edit"))
 ) -> Any:
     """
     Create a new student (requires access to the target class)
@@ -125,7 +125,7 @@ async def create_student(
 async def get_student(
     student_id: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:view"))
 ) -> Any:
     """
     Get student by ID (requires access to student's class)
@@ -158,7 +158,7 @@ async def get_student(
 async def get_students_by_class(
     class_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:view"))
 ) -> Any:
     """
     Get students by class ID (requires access to the class)
@@ -191,7 +191,7 @@ async def update_student(
     student_id: str,
     student_data: StudentUpdate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:edit"))
 ) -> Any:
     """
     Update student information (requires access to student's class)
@@ -238,7 +238,7 @@ async def update_student(
 async def delete_student(
     student_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("student:delete"))
 ) -> Any:
     """
     Delete student (requires access to student's class)

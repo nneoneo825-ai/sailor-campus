@@ -9,7 +9,7 @@ from app.models.student import BaseStudent
 from app.models.moral import CfgMoralIndicator, BizMoralRecord, BizOverallRecord
 from app.models.user import SysUser
 from app.models.org import SysOrg, BaseClassInfo, BaseTeacher
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.log_helper import log_operation, ACTION_CREATE
 
 
@@ -42,7 +42,7 @@ class DormRecordCreate(BaseModel):
 @router.get("/buildings")
 async def get_dorm_buildings(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取所有宿舍楼栋列表
@@ -61,7 +61,7 @@ async def get_dorm_buildings(
 async def get_dorm_floors(
     building: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取指定楼栋的楼层列表
@@ -81,7 +81,7 @@ async def get_dorm_rooms(
     building: str,
     floor: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取指定楼栋楼层的房间列表
@@ -104,7 +104,7 @@ async def get_dorm_students(
     floor: int,
     room: str,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取指定房间的学生列表（含床位信息）
@@ -167,7 +167,7 @@ ALLOWED_DORM_COMBINATIONS = [
 @router.get("/indicators")
 async def get_dorm_indicators(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:class"))
 ) -> Any:
     """
     获取宿舍检查指标列表（普通宿舍检查模块使用）
@@ -242,7 +242,7 @@ async def create_dorm_record(
     record: DormRecordCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """
     创建宿舍检查记录
@@ -334,7 +334,7 @@ async def create_dorm_records_batch(
     data: dict,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """
     批量创建宿舍检查记录
@@ -458,7 +458,7 @@ async def get_dorm_records(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """
     获取宿舍检查记录列表
@@ -563,7 +563,7 @@ async def get_dorm_report(
     grade: Optional[str] = Query(None, description="年级名称"),
     class_name: Optional[str] = Query(None, description="班级名称"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("moral:dorm"))
 ) -> Any:
     """
     获取宿舍量化报表数据

@@ -9,7 +9,7 @@ from app.models.user import SysUser
 from app.models.role import SysRole, sys_user_role
 from app.models.org import SysOrg, BaseTeacher, BaseClassTeacher
 from app.utils.auth import get_password_hash, verify_password
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import get_user_data_scope
 from app.utils.log_helper import log_operation, MODULE_USER, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE
 from io import BytesIO
@@ -39,7 +39,7 @@ class UserUpdate(BaseModel):
 
 
 class PasswordUpdate(BaseModel):
-    old_password: str
+    old_password: str = None
     new_password: str
 
 
@@ -60,7 +60,7 @@ async def get_users(
     page_size: int = Query(20, ge=1, le=100),
     keyword: str = Query(None),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Get user list with pagination and search (filtered by data scope)
@@ -145,7 +145,7 @@ async def get_users(
 async def get_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Get user by ID (requires access to user's organization)
@@ -205,7 +205,7 @@ async def create_user(
     user_data: UserCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Create a new user (requires access to target organization)
@@ -283,7 +283,7 @@ async def update_user(
     user_data: UserUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Update user information (requires access to user's organization)
@@ -294,12 +294,7 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 权限校验：只能修改自己的密码，管理员可修改他人密码
-    scope = get_user_data_scope(db, current_user)
-    if user_id != current_user.id and not scope.has_all:
-        raise HTTPException(status_code=403, detail="只能修改自己的密码")
-    
-    # 检查是否有权限修改该用户
+    # 权限校验：有system:user权限的管理员可在数据范围内修改其他用户
     if user.id == current_user.id:
         # 修改自己：禁止修改角色、状态、组织（防提权）
         if user_data.role_ids is not None:
@@ -381,7 +376,7 @@ async def delete_user(
     user_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Delete user (requires access to user's organization)
@@ -392,12 +387,7 @@ async def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 权限校验：只能修改自己的密码，管理员可修改他人密码
-    scope = get_user_data_scope(db, current_user)
-    if user_id != current_user.id and not scope.has_all:
-        raise HTTPException(status_code=403, detail="只能修改自己的密码")
-
-    # Check if trying to delete self
+    # 权限校验：不能删除自己
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="不能删除自己")
     
@@ -451,7 +441,7 @@ async def update_password(
     password_data: PasswordUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Update user password
@@ -460,24 +450,43 @@ async def update_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    # 权限校验：可修改自己密码；管理员可重置数据范围内用户的密码
     scope = get_user_data_scope(db, current_user)
-    if user_id != current_user.id and not scope.has_all:
-        raise HTTPException(status_code=403, detail="只能修改自己的密码")
+    is_reset_by_admin = user_id != current_user.id
+    if is_reset_by_admin:
+        if scope.has_all:
+            pass  # 系统管理员可重置任何人的密码
+        else:
+            accessible_org_ids = set()
+            accessible_org_ids.update(scope.school_ids)
+            accessible_org_ids.update(scope.grade_ids)
+            accessible_org_ids.update(scope.class_ids)
+            accessible_org_ids.update(scope.teaching_group_ids)
+            accessible_org_ids.update(scope.department_ids)
+            if user.org_id not in accessible_org_ids:
+                raise HTTPException(status_code=403, detail="无权限修改该用户密码")
 
-    # 权限校验：只能修改自己的密码，管理员可修改他人密码
-    scope = get_user_data_scope(db, current_user)
-    if user_id != current_user.id and not scope.has_all:
-        raise HTTPException(status_code=403, detail="只能修改自己的密码")
-
-    # Verify old password (skip verification if changing default password)
-    if user.password_changed:
-        if not verify_password(password_data.old_password, user.password):
-            raise HTTPException(status_code=400, detail="Incorrect old password")
-    else:
-        # For first-time password change, verify the default password "111111"
-        if not verify_password("111111", user.password):
-            raise HTTPException(status_code=400, detail="Incorrect default password")
+    # 管理员重置他人密码时，不需要验证旧密码
+    if is_reset_by_admin:
+        user.password = get_password_hash(password_data.new_password)
+        user.password_changed = False  # 要求用户下次登录修改密码
+        db.commit()
+        log_operation(
+            db=db,
+            user=current_user,
+            module=MODULE_USER,
+            action=ACTION_UPDATE,
+            description=f"重置密码: {user.real_name}({user.username})",
+            status="成功",
+            request=request
+        )
+        return {"message": "Password reset successfully"}
+    
+    # 修改自己密码：验证旧密码
+    if not password_data.old_password:
+        raise HTTPException(status_code=400, detail="请输入原密码")
+    if not verify_password(password_data.old_password, user.password):
+        raise HTTPException(status_code=400, detail="Incorrect old password")
 
     # Update password and mark as changed
     user.password = get_password_hash(password_data.new_password)
@@ -504,24 +513,25 @@ async def update_user_status(
     status: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ) -> Any:
     """
     Enable or disable user
     """
     scope = get_user_data_scope(db, current_user)
 
-    if not scope.has_all:
-        raise HTTPException(status_code=403, detail="仅管理员可修改用户状态")
-
     user = db.query(SysUser).filter(SysUser.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 权限校验：只能修改自己的密码，管理员可修改他人密码
-    scope = get_user_data_scope(db, current_user)
-    if user_id != current_user.id and not scope.has_all:
-        raise HTTPException(status_code=403, detail="只能修改自己的密码")
+    # 权限校验：管理员可在数据范围内修改用户状态
+    if not scope.has_all:
+        accessible_org_ids = set()
+        accessible_org_ids.update(scope.school_ids)
+        accessible_org_ids.update(scope.grade_ids)
+        accessible_org_ids.update(scope.class_ids)
+        if user.org_id not in accessible_org_ids:
+            raise HTTPException(status_code=403, detail="无权限修改该用户状态")
 
     # Check if trying to disable self
     if user_id == current_user.id and status == 0:
@@ -566,7 +576,7 @@ class UserBatchCreate(BaseModel):
 @router.get("/template/download")
 async def download_import_template(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ):
     """
     下载用户批量导入模板
@@ -675,7 +685,7 @@ async def download_import_template(
 async def import_users(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ):
     """
     批量导入用户
@@ -853,7 +863,7 @@ async def transfer_user(
     transfer_data: UserTransfer,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ):
     """
     用户调动 - 将用户移动到新的组织
@@ -938,7 +948,7 @@ async def transfer_user(
 async def get_user_permission_preview(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ):
     """
     获取用户权限预览 - 显示用户可访问的数据范围
@@ -1030,7 +1040,7 @@ async def batch_update_user_status(
     status: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:user"))
 ):
     """
     批量启用/禁用用户

@@ -61,7 +61,7 @@ def log_operation(
     # 创建日志记录
     log = SysOperationLog(
         user_id=user.id if user else None,
-        username=user.real_name if user else (user.username if user else "unknown"),
+        username=(user.real_name or user.username) if user else "unknown",
         role_name=role_name,
         module=module,
         action=action,

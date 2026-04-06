@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.org import SysOrg, BaseClassInfo
 from app.models.user import SysUser
 from app.models.student import BaseStudent
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission, require_any_permission
 from app.utils.data_scope import get_user_data_scope, DataScope
 from app.utils.log_helper import log_operation, MODULE_ORG, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE
 
@@ -231,7 +231,7 @@ def build_org_tree(org_id: int = 0, db: Session = None, level: int = 0):
 @router.get("/tree")
 async def get_org_tree(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_any_permission(["system:org", "moral:class"]))
 ) -> Any:
     """
     Get organization tree structure (filtered by user's data scope)
@@ -270,15 +270,36 @@ async def get_org_tree(
                 current_org = parent
             else:
                 break
-    
-    # 获取已授权节点的子节点（包括部门、教研组等）
-    # 注意：只获取accessible_org_ids的子节点，而不是所有祖先节点的子节点
-    # 这样可以避免获取到其他平级组织的节点
-    children_orgs = db.query(SysOrg).filter(
-        SysOrg.parent_id.in_(accessible_org_ids)
-    ).all()
-    for child in children_orgs:
-        all_related_ids.add(child.id)
+
+    # 只从用户真正授权的节点展开子节点
+    # school_ids 和 grade_ids 是上级路径节点，不应展开它们的子节点
+    # 只有 class_ids 和其他直接授权的节点才需要展开
+    expandable_ids = set()
+    expandable_ids.update(scope.class_ids)
+    expandable_ids.update(scope.teaching_group_ids)
+    expandable_ids.update(scope.department_ids)
+    # 对于 SCHOOL-scoped 和 GRADE-scoped 用户，也需要展开 school_ids
+    if scope.has_all or any(s.data_scope in (2, 3) for s in current_user.roles if s.data_scope):
+        expandable_ids.update(scope.school_ids)
+    # 对于 GRADE-scoped 用户，也需要展开 grade_ids
+    if any(s.data_scope == 3 for s in current_user.roles if s.data_scope):
+        expandable_ids.update(scope.grade_ids)
+    # 只保留实际存在于 accessible_org_ids 中的 ID
+    expandable_ids = expandable_ids & accessible_org_ids
+
+    if expandable_ids:
+        children_orgs = db.query(SysOrg).filter(
+            SysOrg.parent_id.in_(expandable_ids)
+        ).all()
+        for child in children_orgs:
+            all_related_ids.add(child.id)
+            # 对中间层级（如年级）继续展开子节点（如班级）
+            if child.type == 'grade':
+                grade_children = db.query(SysOrg).filter(
+                    SysOrg.parent_id == child.id
+                ).all()
+                for gc in grade_children:
+                    all_related_ids.add(gc.id)
     
     # 重新获取包含祖先节点和已授权节点子节点的组织
     all_orgs = db.query(SysOrg).filter(SysOrg.id.in_(all_related_ids)).all()
@@ -307,7 +328,7 @@ async def get_org_tree(
 async def get_classes_by_org(
     org_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_any_permission(["system:org", "moral:class"]))
 ) -> Any:
     """
     Get classes under an organization (school or grade, requires access to the organization)
@@ -392,7 +413,7 @@ async def get_students_by_class(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_any_permission(["system:org", "moral:class", "student:view"]))
 ) -> Any:
     """
     Get students in a class with pagination
@@ -458,7 +479,7 @@ async def get_teachers_by_org(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Get teachers under an organization
@@ -522,7 +543,7 @@ async def get_users_by_org(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Get users associated with an organization (including user's role info)
@@ -590,7 +611,7 @@ async def get_users_by_org(
 async def get_org_detail(
     org_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Get organization detail information
@@ -641,7 +662,7 @@ async def get_org_detail(
 async def get_seating_chart(
     class_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Get class seating chart
@@ -706,7 +727,7 @@ async def update_seating_chart(
     class_id: int,
     seating_chart: dict,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Update class seating chart
@@ -749,7 +770,7 @@ async def get_all_teachers(
     page_size: int = Query(20, ge=1, le=500),
     grade: Optional[str] = Query(None, description="Filter by grade"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Get all teachers with pagination (filtered by user's data scope)
@@ -816,7 +837,7 @@ async def create_org(
     org_data: OrgCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Create a new organization node (requires access to parent organization)
@@ -919,7 +940,7 @@ async def update_org(
     org_data: OrgUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Update organization node (requires access to the organization)
@@ -1030,7 +1051,7 @@ async def delete_org(
     org_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     Delete organization node (requires access to the organization)
@@ -1153,7 +1174,7 @@ class BatchClassesCreate(BaseModel):
 @router.get("/grade-templates")
 async def get_grade_templates(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     获取年级结构模板列表
@@ -1170,7 +1191,7 @@ async def create_school_with_structure(
     data: SchoolWithStructureCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     学校创建向导 - 创建学校并自动生成年级结构
@@ -1320,7 +1341,7 @@ async def batch_create_classes(
     data: BatchClassesCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     批量创建班级
@@ -1457,7 +1478,7 @@ async def batch_create_teaching_groups(
     data: BatchTeachingGroupsCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     批量创建教研组（按年级创建）
@@ -1567,7 +1588,7 @@ async def batch_create_teaching_groups(
 @router.get("/teaching-group-templates")
 async def get_teaching_group_templates(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:org"))
 ) -> Any:
     """
     获取教研组模板列表

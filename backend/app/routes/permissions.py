@@ -347,5 +347,19 @@ def assign_default_permissions(db: Session):
             except IntegrityError:
                 pass
 
+    # Campus admin gets business permissions + user management
+    campus_admin_role = db.query(SysRole).filter(SysRole.code == "campus_admin").first()
+    if campus_admin_role:
+        # 与校长相同业务权限(1-26) + 用户管理(27)，不含角色管理/组织架构/指标/日志
+        campus_admin_perms = list(range(1, 27)) + [27]
+        for perm_id in campus_admin_perms:
+            try:
+                db.execute(
+                    text("INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)"),
+                    {"role_id": campus_admin_role.id, "permission_id": perm_id}
+                )
+            except IntegrityError:
+                pass
+
     db.commit()
     print("✅ Default permissions assigned to roles")

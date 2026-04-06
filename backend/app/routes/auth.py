@@ -223,91 +223,6 @@ async def login(
     }
 
 
-@router.post("/wechat-unbind")
-async def wechat_unbind(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    解绑微信账号
-    """
-    if not current_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="当前账号未绑定微信"
-        )
-    
-    # 清除 openid
-    current_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": "微信解绑成功",
-        "user": build_user_response(current_user, db)
-    }
-
-
-@router.get("/wechat-status")
-async def wechat_status(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    获取当前用户的微信绑定状态
-    """
-    return {
-        "is_bound": bool(current_user.wechat_openid),
-        "openid": current_user.wechat_openid[:20] + "..." if current_user.wechat_openid else None
-    }
-
-
-@router.post("/admin/unbind-wechat/{user_id}")
-async def admin_unbind_wechat(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
-) -> Any:
-    """
-    管理员解绑指定用户的微信
-    需要管理员权限
-    """
-    # 检查当前用户是否是管理员
-    is_admin = False
-    if current_user.roles:
-        for role in current_user.roles:
-            if role.code in ("admin", "ROLE_ADMIN"):
-                is_admin = True
-                break
-    
-    if not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限"
-        )
-    
-    # 查找目标用户
-    target_user = db.query(SysUser).filter(SysUser.id == user_id).first()
-    if not target_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
-    if not target_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该用户未绑定微信"
-        )
-    
-    # 解绑微信
-    target_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": f"已成功解除用户 {target_user.real_name} 的微信绑定"
-    }
-
-
 @router.post("/register")
 async def register(
     username: str,
@@ -433,93 +348,9 @@ async def wechat_login(
     }
 
 
-@router.post("/wechat-unbind")
-async def wechat_unbind(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    解绑微信账号
-    """
-    if not current_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="当前账号未绑定微信"
-        )
-    
-    # 清除 openid
-    current_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": "微信解绑成功",
-        "user": build_user_response(current_user, db)
-    }
-
-
-@router.get("/wechat-status")
-async def wechat_status(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    获取当前用户的微信绑定状态
-    """
-    return {
-        "is_bound": bool(current_user.wechat_openid),
-        "openid": current_user.wechat_openid[:20] + "..." if current_user.wechat_openid else None
-    }
-
-
-@router.post("/admin/unbind-wechat/{user_id}")
-async def admin_unbind_wechat(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
-) -> Any:
-    """
-    管理员解绑指定用户的微信
-    需要管理员权限
-    """
-    # 检查当前用户是否是管理员
-    is_admin = False
-    if current_user.roles:
-        for role in current_user.roles:
-            if role.code in ("admin", "ROLE_ADMIN"):
-                is_admin = True
-                break
-    
-    if not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限"
-        )
-    
-    # 查找目标用户
-    target_user = db.query(SysUser).filter(SysUser.id == user_id).first()
-    if not target_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
-    if not target_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该用户未绑定微信"
-        )
-    
-    # 解绑微信
-    target_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": f"已成功解除用户 {target_user.real_name} 的微信绑定"
-    }
-
-
 class FirstLoginPasswordChange(BaseModel):
     username: str
+    current_password: str
     new_password: str
 
 
@@ -547,11 +378,11 @@ async def first_login_change_password(
             detail="Password has already been changed. Please use regular password change."
         )
 
-    # Verify the default password "111111"
-    if not verify_password("111111", user.password):
+    # Verify the current password (may be default or admin-reset password)
+    if not verify_password(password_data.current_password, user.password):
         raise HTTPException(
             status_code=400,
-            detail="Incorrect default password"
+            detail="当前密码不正确"
         )
 
     # Update password and mark as changed
@@ -645,89 +476,4 @@ async def wechat_bind(
         "access_token": access_token,
         "token_type": "bearer",
         "user": build_user_response(user, db)
-    }
-
-
-@router.post("/wechat-unbind")
-async def wechat_unbind(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    解绑微信账号
-    """
-    if not current_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="当前账号未绑定微信"
-        )
-    
-    # 清除 openid
-    current_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": "微信解绑成功",
-        "user": build_user_response(current_user, db)
-    }
-
-
-@router.get("/wechat-status")
-async def wechat_status(
-    current_user: SysUser = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    获取当前用户的微信绑定状态
-    """
-    return {
-        "is_bound": bool(current_user.wechat_openid),
-        "openid": current_user.wechat_openid[:20] + "..." if current_user.wechat_openid else None
-    }
-
-
-@router.post("/admin/unbind-wechat/{user_id}")
-async def admin_unbind_wechat(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
-) -> Any:
-    """
-    管理员解绑指定用户的微信
-    需要管理员权限
-    """
-    # 检查当前用户是否是管理员
-    is_admin = False
-    if current_user.roles:
-        for role in current_user.roles:
-            if role.code in ("admin", "ROLE_ADMIN"):
-                is_admin = True
-                break
-    
-    if not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限"
-        )
-    
-    # 查找目标用户
-    target_user = db.query(SysUser).filter(SysUser.id == user_id).first()
-    if not target_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
-    if not target_user.wechat_openid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该用户未绑定微信"
-        )
-    
-    # 解绑微信
-    target_user.wechat_openid = None
-    db.commit()
-    
-    return {
-        "message": f"已成功解除用户 {target_user.real_name} 的微信绑定"
     }

@@ -32,39 +32,7 @@ import { useConfirm } from './ui/Confirm';
 import { getBeijingDate } from '../src/utils/dateUtils';
 import * as XLSX from 'xlsx';
 
-// --- 权限检查辅助函数 ---
-const getUserPermissions = (): string[] => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      return userData.permissions || [];
-    }
-  } catch (e) {
-    console.error('Failed to get user permissions:', e);
-  }
-  return [];
-};
-
-const getUserRole = (): string => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      return userData.role_name || '';
-    }
-  } catch (e) {
-    console.error('Failed to get user role:', e);
-  }
-  return '';
-};
-
-const hasPermission = (permission: string): boolean => {
-  const role = getUserRole();
-  if (role === '系统管理员') return true;
-  const permissions = getUserPermissions();
-  return permissions.includes(permission);
-};
+import { hasPermission } from '../src/utils/permission';
 
 // --- Types & Interfaces ---
 

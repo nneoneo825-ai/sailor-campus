@@ -102,6 +102,9 @@ def get_user_data_scope(db: Session, user: SysUser) -> DataScope:
             if user_org:
                 _build_scope_from_org(db, scope, user_org, min_scope)
 
+    # 补充班主任关联的班级（通过教师档案关联）
+    _add_head_teacher_classes(db, scope, user)
+
     # 如果没有任何权限范围，设置为仅本人数据
     if not scope.has_all and not scope.school_ids and not scope.grade_ids and not scope.class_ids and not scope.teaching_group_ids and not scope.department_ids:
         # 检查是否有仅本人数据的角色
@@ -282,8 +285,6 @@ def _add_school_sub_orgs(db: Session, scope: DataScope, school_id: int):
         SysOrg.type == 'teaching_group'
     ).all()
     for tg in teaching_groups:
-        if not hasattr(scope, 'teaching_group_ids'):
-            scope.teaching_group_ids = set()
         scope.teaching_group_ids.add(tg.id)
     
     # 获取学校下的部门
@@ -292,8 +293,6 @@ def _add_school_sub_orgs(db: Session, scope: DataScope, school_id: int):
         SysOrg.type == 'department'
     ).all()
     for dept in departments:
-        if not hasattr(scope, 'department_ids'):
-            scope.department_ids = set()
         scope.department_ids.add(dept.id)
 
 
@@ -305,6 +304,42 @@ def _add_grade_sub_classes(db: Session, scope: DataScope, grade_id: int):
     ).all()
     for cls in classes:
         scope.class_ids.add(cls.id)
+
+
+def _add_head_teacher_classes(db: Session, scope: DataScope, user: SysUser):
+    """
+    补充班主任通过教师档案关联的班级到数据范围
+    关联链: sys_user.id -> base_teacher.user_id -> base_class_teacher(teacher_id, is_head_teacher=1) -> class_id
+    """
+    try:
+        rows = db.execute(
+            text("""
+                SELECT DISTINCT ct.class_id
+                FROM base_class_teacher ct
+                JOIN base_teacher t ON t.id = ct.teacher_id
+                WHERE t.user_id = :user_id
+                  AND ct.is_head_teacher = 1
+                  AND ct.status = 1
+            """),
+            {"user_id": user.id}
+        ).fetchall()
+
+        for row in rows:
+            class_id = row[0]
+            scope.class_ids.add(class_id)
+
+            # 同时添加班级所属的年级和学校
+            class_org = db.query(SysOrg).filter(SysOrg.id == class_id).first()
+            if class_org and class_org.parent_id:
+                grade_org = db.query(SysOrg).filter(SysOrg.id == class_org.parent_id).first()
+                if grade_org and grade_org.type == 'grade':
+                    scope.grade_ids.add(grade_org.id)
+                    if grade_org.parent_id:
+                        school_org = db.query(SysOrg).filter(SysOrg.id == grade_org.parent_id).first()
+                        if school_org and school_org.type == 'school':
+                            scope.school_ids.add(school_org.id)
+    except Exception:
+        pass  # 查询失败不影响其他权限
 
 
 def filter_query_by_scope(

@@ -14,6 +14,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [pendingUsername, setPendingUsername] = useState('');
+  const [pendingPassword, setPendingPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -47,6 +48,7 @@ const Login: React.FC = () => {
       if (err.response?.status === 403 && err.response?.data?.detail === 'First login - password change required') {
         // 首次登录，显示修改密码模态框
         setPendingUsername(username);
+        setPendingPassword(password);
         setShowChangePasswordModal(true);
         setError('');
       } else if (err.response?.data?.detail) {
@@ -77,6 +79,7 @@ const Login: React.FC = () => {
       // 调用首次登录修改密码API（不需要认证）
       const response: any = await api.post('/api/auth/first-login-change-password', {
         username: pendingUsername,
+        current_password: pendingPassword,
         new_password: newPassword
       });
 
@@ -236,7 +239,17 @@ const Login: React.FC = () => {
             </div>
             <div className="p-6 space-y-4">
               <div className="text-sm text-slate-600 mb-2">
-                您是首次登录，默认密码为 <span className="font-bold text-blue-600">111111</span>，请修改为个人密码。
+                您是首次登录，请先修改密码后再进入系统。
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">当前密码 <span className="text-red-500">*</span></label>
+                <input
+                  type="password"
+                  value={pendingPassword}
+                  onChange={(e) => setPendingPassword(e.target.value)}
+                  className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"
+                  placeholder="请输入当前密码"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">新密码 <span className="text-red-500">*</span></label>
@@ -265,6 +278,7 @@ const Login: React.FC = () => {
                   setShowChangePasswordModal(false);
                   setNewPassword('');
                   setConfirmPassword('');
+                  setPendingPassword('');
                   setPassword('');
                 }}
                 className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-white transition-colors"

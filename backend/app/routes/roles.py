@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.database import get_db
 from app.models.role import SysRole, sys_role_org
 from app.models.org import SysOrg
-from app.utils.deps import get_current_active_user, is_builtin_admin, get_current_user_with_scope
+from app.utils.deps import get_current_active_user, require_permission, is_builtin_admin, get_current_user_with_scope
 from app.utils.log_helper import log_operation, MODULE_USER, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE
 from app.models.user import SysUser
 
@@ -32,13 +32,35 @@ class RoleUpdate(BaseModel):
     org_ids: List[int] = None
 
 
+@router.get("/list")
+async def get_roles_simple(
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(require_permission("system:user"))
+) -> Any:
+    """
+    获取角色简要列表（不分页），用于用户管理中的角色分配下拉选择
+    仅需 system:user 权限
+    """
+    roles = db.query(SysRole).order_by(SysRole.id).all()
+    return {
+        "roles": [
+            {
+                "id": role.id,
+                "code": role.code,
+                "name": role.name,
+            }
+            for role in roles
+        ]
+    }
+
+
 @router.get("/")
 async def get_roles(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     keyword: str = Query(None),
     db: Session = Depends(get_db),
-    current_user: Depends = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Get role list with pagination and search
@@ -77,7 +99,7 @@ async def get_roles(
 async def get_role(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: Depends = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Get role by ID
@@ -100,7 +122,7 @@ async def create_role(
     role_data: RoleCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Create a new role with permissions
@@ -175,7 +197,7 @@ async def update_role(
     role_data: RoleUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Update role information including permissions
@@ -268,7 +290,7 @@ async def delete_role(
     role_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Delete role
@@ -325,7 +347,7 @@ async def get_role_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: Depends = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Get users assigned to this role
@@ -395,7 +417,7 @@ def get_data_scope_name(data_scope: int) -> str:
 async def get_role_orgs(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: Depends = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:role"))
 ) -> Any:
     """
     Get orgs assigned to this role (for custom data scope)

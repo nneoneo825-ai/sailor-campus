@@ -26,6 +26,7 @@ import { api, API_BASE_URL } from '../src/services/apiClient';
 import RoleManagement from './RoleManagement';
 import OrgManagement from './OrgManagement';
 import { getBeijingDate } from '../src/utils/dateUtils';
+import { getCurrentUserId } from '../src/utils/permission';
 import { useToast } from './ui/Toast';
 import { useConfirm } from './ui/Confirm';
 
@@ -294,7 +295,7 @@ const UserManagementTab = () => {
 
   const loadRoles = async () => {
     try {
-      const response: any = await api.get('/api/roles/');
+      const response: any = await api.get('/api/roles/list');
       setRoles(response.roles || []);
     } catch (err: any) {
       console.error('Failed to load roles:', err);
@@ -541,13 +542,13 @@ const UserManagementTab = () => {
     }
     try {
       await api.put(`/api/users/${passwordData.id}/password`, {
-        old_password: passwordData.password, // TODO: 实际应该使用原密码
         new_password: passwordData.password
       });
       toast.success(`用户 "${passwordData.name}" 的密码已成功修改`);
       setIsPasswordModalOpen(false);
     } catch (err: any) {
-      toast.error(`修改密码失败: ${err.message}`);
+      const detail = err.response?.data?.detail || err.message;
+      toast.error(`修改密码失败: ${detail}`);
     }
   };
 
@@ -758,13 +759,15 @@ const UserManagementTab = () => {
                         <Unlink size={16} />
                       </button>
                     )}
+                    {user.id !== getCurrentUserId() && (
                     <button
                       onClick={() => handleOpenPasswordModal(user)}
                       className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="修改密码"
+                      title="重置密码"
                     >
                       <Key size={16} />
                     </button>
+                    )}
                     <button
                       onClick={() => openEditModal(user)}
                       className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"

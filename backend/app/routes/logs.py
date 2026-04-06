@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.log import SysOperationLog
 from app.models.user import SysUser
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import get_user_data_scope
 
 router = APIRouter()
@@ -46,7 +46,7 @@ async def get_logs(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页条数"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     获取系统操作日志列表（仅管理员）
@@ -124,7 +124,7 @@ async def get_logs(
 @router.get("/modules")
 async def get_log_modules(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     获取所有日志模块列表（用于筛选，仅管理员）
@@ -139,7 +139,7 @@ async def get_log_modules(
 @router.get("/actions")
 async def get_log_actions(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     获取所有操作类型列表（用于筛选，仅管理员）
@@ -155,7 +155,7 @@ async def get_log_actions(
 async def get_log_stats(
     days: int = Query(7, ge=1, le=30, description="统计天数"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     获取日志统计信息（仅管理员）
@@ -202,7 +202,7 @@ async def get_log_stats(
 async def delete_log(
     log_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     删除单条日志（仅管理员）
@@ -224,7 +224,7 @@ async def delete_log(
 async def clear_logs(
     days: int = Query(30, ge=7, description="清理多少天前的日志"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("system:logs"))
 ) -> Any:
     """
     清理历史日志（仅管理员）

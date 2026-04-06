@@ -10,7 +10,7 @@ from app.models.user import SysUser
 from app.models.org import SysOrg
 from app.models.student import BaseStudent
 from app.models.task import ScheduleTask
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, require_permission
 from app.utils.data_scope import get_user_data_scope
 
 # 导入整体检查记录模型
@@ -25,7 +25,7 @@ router = APIRouter()
 @router.get("/dashboard")
 async def get_dashboard_data(
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get dashboard statistics (filtered by user's data scope)
@@ -170,7 +170,7 @@ async def get_five_education_evaluation(
     class_id: Optional[int] = None,
     date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get five-education comprehensive evaluation
@@ -248,7 +248,7 @@ async def get_moral_trend(
     class_id: Optional[int] = None,
     days: int = Query(30, ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get moral education trend
@@ -295,7 +295,7 @@ async def get_teaching_trend(
     class_id: Optional[int] = None,
     days: int = Query(30, ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get teaching evaluation trend
@@ -342,7 +342,7 @@ async def get_class_rank(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get class ranking based on moral and teaching scores
@@ -409,7 +409,7 @@ async def get_student_rank(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     Get student ranking based on moral scores
@@ -464,7 +464,7 @@ async def get_student_rank(
 async def get_miniprogram_stats(
     school_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_active_user)
+    current_user: Any = Depends(require_permission("dashboard:view"))
 ) -> Any:
     """
     小程序统计页面数据（按用户数据权限过滤）

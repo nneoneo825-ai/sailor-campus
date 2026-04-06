@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sql
+backend/backups/
+
+# Backup scripts output
+$backupFile
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

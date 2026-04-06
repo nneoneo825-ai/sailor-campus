@@ -28,7 +28,7 @@ class ScheduleTask(Base, TimestampMixin, SoftDeleteMixin):
     
     # 指派信息
     assignee_type = Column(VARCHAR(20), nullable=False, default='self')  # self-本人, dept-部门, user-指定用户
-    assignee_id = Column(BIGINT, nullable=True)  # 指派用户ID (assignee_type为user时)
+    assignee_id = Column(BIGINT, ForeignKey('sys_user.id'), nullable=True)  # 指派用户ID (assignee_type为user时)
     assignee_name = Column(VARCHAR(100), nullable=True)  # 指派人/部门名称
     
     # 备注
@@ -36,7 +36,7 @@ class ScheduleTask(Base, TimestampMixin, SoftDeleteMixin):
     
     # 完成信息
     completed_at = Column(DATETIME, nullable=True)
-    completed_by = Column(BIGINT, nullable=True)
+    completed_by = Column(BIGINT, ForeignKey('sys_user.id'), nullable=True)
     complete_remark = Column(TEXT, nullable=True)
     
     # 关联
@@ -44,7 +44,7 @@ class ScheduleTask(Base, TimestampMixin, SoftDeleteMixin):
     school = relationship("SysOrg", backref="schedule_tasks")
 
 
-class TaskNotification(Base, TimestampMixin):
+class TaskNotification(Base, TimestampMixin, SoftDeleteMixin):
     """任务通知表"""
     __tablename__ = "task_notification"
 

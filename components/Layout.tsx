@@ -18,44 +18,8 @@ import { MenuLink, User } from '../types';
 import { useToast } from './ui/Toast';
 import { useConfirm } from './ui/Confirm';
 
-// 页面访问权限配置（与 App.tsx 保持一致）
-// 使用权限代码控制菜单显示
-const PAGE_PERMISSIONS: Record<string, string[]> = {
-  '/': [],  // 首页所有人可访问
-  '/school': ['school:view', 'class:view', 'student:view', 'teacher:view'],
-  '/moral': ['moral:class', 'moral:grade', 'moral:school', 'moral:dorm', 'moral:district'],
-  '/teaching': ['teaching:personal', 'teaching:grade', 'teaching:school', 'teaching:provincial'],
-  '/collection': ['moral:class', 'moral:grade', 'teaching:personal', 'teaching:grade'],
-  '/system': ['system:user', 'system:role', 'system:org', 'system:moral_indicator', 'system:teaching_indicator', 'system:logs'],
-};
-
-// 获取当前用户权限列表
-const getCurrentUserPermissions = (): string[] => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      return userData.permissions || [];
-    }
-  } catch (e) {
-    console.error('Failed to get user permissions:', e);
-  }
-  return [];
-};
-
-// 获取当前用户角色
-const getCurrentUserRole = (): string => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      return userData.role_name || '';
-    }
-  } catch (e) {
-    console.error('Failed to get user role:', e);
-  }
-  return '';
-};
+import { filterMenuItemsByPermission, getCurrentUser, getCurrentUserId, clearAuth } from '../src/utils/permission';
+import { api } from '../src/services/apiClient';
 
 const ALL_MENU_ITEMS: MenuLink[] = [
   { label: '首页概览', path: '/', icon: LayoutDashboard },
@@ -66,29 +30,6 @@ const ALL_MENU_ITEMS: MenuLink[] = [
   { label: '系统管理', path: '/system', icon: Settings },
 ];
 
-// 根据权限获取菜单项
-const getMenuItemsByPermissions = (): MenuLink[] => {
-  const userPerms = getCurrentUserPermissions();
-  const userRole = getCurrentUserRole();
-
-  return ALL_MENU_ITEMS.filter(item => {
-    const requiredPerms = PAGE_PERMISSIONS[item.path];
-    
-    // 未配置权限要求的路径默认允许访问
-    if (!requiredPerms || requiredPerms.length === 0) {
-      return true;
-    }
-    
-    // 系统管理员角色拥有所有权限
-    if (userRole === '系统管理员') {
-      return true;
-    }
-    
-    // 用户需要拥有至少一个所需权限
-    return requiredPerms.some(perm => userPerms.includes(perm));
-  });
-};
-
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -97,39 +38,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ old_password: '', new_password: '', confirm: '' });
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { confirm } = useConfirm();
 
-  // 从 localStorage 读取用户信息
-  const getUserInfo = (): User => {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        return {
-          id: userData.id?.toString() || '',
-          name: userData.real_name || '未知用户',
-          role: userData.role_name || '未分配角色',
-          avatar: ''
-        };
-      }
-    } catch (e) {
-      console.error('Failed to parse user data:', e);
-    }
+  const currentUser = (() => {
+    const user = getCurrentUser();
     return {
-      id: '',
-      name: '未登录',
-      role: '未分配角色',
+      id: user?.id?.toString() || '',
+      name: user?.real_name || '未知用户',
+      role: user?.role_name || '未分配角色',
       avatar: ''
     };
-  };
-
-  const currentUser = getUserInfo();
+  })();
   
   // 根据用户权限获取过滤后的菜单
-  const MENU_ITEMS = getMenuItemsByPermissions();
+  const MENU_ITEMS = filterMenuItemsByPermission(ALL_MENU_ITEMS);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -137,8 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const confirmed = await confirm('确定要退出登录吗？');
     if (!confirmed) return;
     // 清除认证信息
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+    clearAuth();
     // 重定向到登录页面
     navigate('/login');
   };
@@ -290,7 +215,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50">
                     <h3 className="text-lg font-bold text-slate-800">修改密码</h3>
-                    <button onClick={() => setIsPasswordModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <button onClick={() => { setIsPasswordModalOpen(false); setPasswordForm({ old_password: '', new_password: '', confirm: '' }); }} className="text-slate-400 hover:text-slate-600 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -299,6 +224,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <label className="block text-sm font-medium text-slate-700 mb-1">原密码</label>
                         <input 
                             type="password" 
+                            value={passwordForm.old_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
                             className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"
                             placeholder="请输入原密码"
                         />
@@ -307,6 +234,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <label className="block text-sm font-medium text-slate-700 mb-1">新密码</label>
                         <input 
                             type="password" 
+                            value={passwordForm.new_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                             className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"
                             placeholder="请输入新密码"
                         />
@@ -315,6 +244,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <label className="block text-sm font-medium text-slate-700 mb-1">确认新密码</label>
                         <input 
                             type="password" 
+                            value={passwordForm.confirm}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
                             className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"
                             placeholder="请再次输入新密码"
                         />
@@ -322,19 +253,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3">
                     <button 
-                        onClick={() => setIsPasswordModalOpen(false)}
+                        onClick={() => { setIsPasswordModalOpen(false); setPasswordForm({ old_password: '', new_password: '', confirm: '' }); }}
                         className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-white transition-colors"
                     >
                         取消
                     </button>
                     <button
-                        onClick={() => {
+                        onClick={async () => {
+                          if (!passwordForm.old_password || !passwordForm.new_password) {
+                            toast.warning('请填写完整');
+                            return;
+                          }
+                          if (passwordForm.new_password !== passwordForm.confirm) {
+                            toast.warning('两次输入的密码不一致');
+                            return;
+                          }
+                          if (passwordForm.new_password.length < 6) {
+                            toast.warning('新密码长度至少6位');
+                            return;
+                          }
+                          try {
+                            await api.put(`/api/users/${getCurrentUserId()}/password`, {
+                              old_password: passwordForm.old_password,
+                              new_password: passwordForm.new_password
+                            });
                             toast.success('密码修改成功！请重新登录。');
                             setIsPasswordModalOpen(false);
-                            // 清除认证信息并重定向到登录页面
-                            localStorage.removeItem('auth_token');
-                            localStorage.removeItem('user');
+                            clearAuth();
                             navigate('/login');
+                          } catch (err: any) {
+                            toast.error(`修改密码失败: ${err.response?.data?.detail || err.message}`);
+                          }
                         }}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors"
                     >
