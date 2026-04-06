@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.database import get_db
 from app.models.role import SysRole, sys_role_org
 from app.models.org import SysOrg
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, is_builtin_admin, get_current_user_with_scope
 from app.utils.log_helper import log_operation, MODULE_USER, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE
 from app.models.user import SysUser
 
@@ -17,7 +17,7 @@ router = APIRouter()
 class RoleCreate(BaseModel):
     code: str
     name: str
-    data_scope: int = 1  # 1:全部, 2:本校, 3:本年级, 4:本班, 5:仅本人, 6:自定义
+    data_scope: int = 2  # 1:全部, 2:本校, 3:本年级, 4:本班, 5:仅本人, 6:自定义
     description: str = None
     permission_ids: List[int] = []  # 功能权限ID列表
     org_ids: List[int] = []  # 数据权限组织ID列表（当data_scope=6时使用）
@@ -103,8 +103,15 @@ async def create_role(
 ) -> Any:
     """
     Create a new role with permissions
-    支持同时配置功能权限和数据权限
+    仅管理员（has_all）可创建角色
     """
+    # 权限校验：仅内置管理员或拥有全部数据权限的用户可创建角色
+    if not is_builtin_admin(current_user):
+        from app.utils.data_scope import get_user_data_scope
+        scope = get_user_data_scope(db, current_user)
+        if not scope.has_all:
+            raise HTTPException(status_code=403, detail="仅管理员可创建角色")
+
     # Check if code already exists
     existing_role = db.query(SysRole).filter(SysRole.code == role_data.code).first()
     if existing_role:
@@ -171,8 +178,15 @@ async def update_role(
 ) -> Any:
     """
     Update role information including permissions
-    支持更新功能权限和数据权限
+    仅管理员（has_all）可修改角色
     """
+    # 权限校验
+    if not is_builtin_admin(current_user):
+        from app.utils.data_scope import get_user_data_scope
+        scope = get_user_data_scope(db, current_user)
+        if not scope.has_all:
+            raise HTTPException(status_code=403, detail="仅管理员可修改角色")
+
     role = db.query(SysRole).filter(SysRole.id == role_id).first()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -257,7 +271,15 @@ async def delete_role(
 ) -> Any:
     """
     Delete role
+    仅管理员（has_all）可删除角色
     """
+    # 权限校验
+    if not is_builtin_admin(current_user):
+        from app.utils.data_scope import get_user_data_scope
+        scope = get_user_data_scope(db, current_user)
+        if not scope.has_all:
+            raise HTTPException(status_code=403, detail="仅管理员可删除角色")
+
     role = db.query(SysRole).filter(SysRole.id == role_id).first()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")

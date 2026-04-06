@@ -61,7 +61,7 @@ const RoleManagement: React.FC = () => {
     code: '',
     name: '',
     description: '',
-    data_scope: 1,
+    data_scope: 2,
     permission_ids: [] as number[],
     org_ids: [] as number[]
   });
@@ -204,7 +204,7 @@ const RoleManagement: React.FC = () => {
     try {
       await api.post('/api/roles/', formData);
       setIsAddModalOpen(false);
-      setFormData({ code: '', name: '', description: '', data_scope: 1, permission_ids: [], org_ids: [] });
+      setFormData({ code: '', name: '', description: '', data_scope: 2, permission_ids: [], org_ids: [] });
       await loadRoles();
       toast.success('角色创建成功！');
     } catch (err: any) {

@@ -38,7 +38,7 @@ class SysRole(Base, TimestampMixin):
     code = Column(VARCHAR(50), unique=True, nullable=False)
     name = Column(VARCHAR(50), nullable=False)
     description = Column(VARCHAR(255), nullable=True)  # 角色描述
-    data_scope = Column(Integer, default=1, nullable=False)  # 1:全部, 2:本校, 3:本年级, 4:本班, 5:仅本人
+    data_scope = Column(Integer, default=2, nullable=False)  # 1:全部, 2:本校, 3:本年级, 4:本班, 5:仅本人
 
     # 关联
     users = relationship("SysUser", secondary=sys_user_role, back_populates="roles")

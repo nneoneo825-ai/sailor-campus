@@ -42,6 +42,15 @@ try:
     try:
         init_permissions(db)
         assign_default_permissions(db)
+        
+        # 修复"干事"角色的数据范围：从全部(1)改为本校(2)
+        try:
+            from sqlalchemy import text
+            db.execute(text("UPDATE sys_role SET data_scope = 2 WHERE code = 'ganshi' AND data_scope = 1"))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"⚠️  ganshi role fix failed: {e}")
     finally:
         db.close()
 except Exception as e:
