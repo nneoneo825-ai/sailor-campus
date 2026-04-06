@@ -716,13 +716,13 @@ const SeatingEditorModal: React.FC<SeatingModalProps> = ({ initialGroups, initia
     };
 
     const handleClearAll = async () => {
-        const confirmed = await confirm('确定清空所有座位安排吗？', { type: 'danger', confirmText: '删除' }); 
+        const confirmed = await confirm('确定清空所有座位安排吗？此操作不可撤销。', { type: 'danger', confirmText: '清空' });
         if (!confirmed) return;
         setGroups(groups.map(g => ({ ...g, students: [] })));
     };
 
     const handleAutoArrange = async () => {
-        const confirmed = await confirm('系统将随机重新分配所有未入座学生，继续吗？', { type: 'danger', confirmText: '删除' }); 
+        const confirmed = await confirm('系统将把所有未入座的学生随机分配到空座位中，继续吗？', { type: 'info', confirmText: '自动补位' }); 
         if (!confirmed) return;
         // Simple logic: fill groups sequentially
         let currentUnassigned = [...unassignedStudents];
