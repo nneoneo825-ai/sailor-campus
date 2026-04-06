@@ -249,7 +249,7 @@ async def create_user(
             role = db.query(SysRole).filter(SysRole.id == role_id).first()
             if role:
                 db.execute(
-                    "INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)",
+                    text("INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)"),
                     {"user_id": db_user.id, "role_id": role_id}
                 )
 
@@ -328,14 +328,14 @@ async def update_user(
     # Update roles if provided
     if user_data.role_ids is not None:
         # Delete existing roles
-        db.execute("DELETE FROM sys_user_role WHERE user_id = :user_id", {"user_id": user_id})
+        db.execute(text("DELETE FROM sys_user_role WHERE user_id = :user_id"), {"user_id": user_id})
 
         # Add new roles
         for role_id in user_data.role_ids:
             role = db.query(SysRole).filter(SysRole.id == role_id).first()
             if role:
                 db.execute(
-                    "INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)",
+                    text("INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)"),
                     {"user_id": user.id, "role_id": role_id}
                 )
 
@@ -405,7 +405,7 @@ async def delete_user(
         db.delete(teacher)
 
     # Delete user roles first
-    db.execute("DELETE FROM sys_user_role WHERE user_id = :user_id", {"user_id": user_id})
+    db.execute(text("DELETE FROM sys_user_role WHERE user_id = :user_id"), {"user_id": user_id})
 
     # Delete user
     db.delete(user)
