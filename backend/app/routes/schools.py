@@ -597,11 +597,11 @@ async def get_school_classes(
         SysOrg.type == 'grade'
     ).all()
     
-    # 方式2：通过 tree_path 查询属于该学校的所有年级（支持多层嵌套）
-    school_name = school.name
+    # 方式2：通过 tree_path 前缀查询（使用学校自身tree_path，避免跨学校误匹配）
     all_orgs_with_path = db.query(SysOrg).filter(
-        SysOrg.tree_path.like(f'%/{school_name}/%'),
-        SysOrg.type == 'grade'
+        SysOrg.tree_path.like(f'{school.tree_path}%'),
+        SysOrg.type == 'grade',
+        SysOrg.id != school_id
     ).all()
     
     # 合并两种查询结果（去重）
@@ -616,31 +616,9 @@ async def get_school_classes(
             grade_ids.add(g.id)
             all_grades.append(g)
     
-    # 方式3：递归查找所有子节点中的年级（兜底方案）
-    def find_grades_recursively(parent_id: int, visited: set = None) -> list:
-        if visited is None:
-            visited = set()
-        if parent_id in visited:
-            return []
-        visited.add(parent_id)
-        
-        grades_found = []
-        children = db.query(SysOrg).filter(SysOrg.parent_id == parent_id).all()
-        print(f"[DEBUG] find_grades_recursively: parent_id={parent_id}, found {len(children)} children")
-        for child in children:
-            print(f"[DEBUG]   Child: id={child.id}, name={child.name}, type={child.type}")
-            if child.type == 'grade' and child.id not in grade_ids:
-                grades_found.append(child)
-                grade_ids.add(child.id)
-                print(f"[DEBUG]     -> Added grade: {child.name}")
-            elif child.type in ['dept', 'campus', 'department']:  # 可能包含年级的中间层级
-                print(f"[DEBUG]     -> Recursing into {child.name}")
-                grades_found.extend(find_grades_recursively(child.id, visited))
-        return grades_found
-    
-    recursive_grades = find_grades_recursively(school_id)
-    print(f"[DEBUG] Recursive grades found: {len(recursive_grades)}")
-    all_grades.extend(recursive_grades)
+    # 不再使用递归查找（已移除）：递归会跨学段遍历所有dept/campus/department子节点，
+    # 导致同一校区下初高中年级互相污染。
+    # 方式1（parent_id直查）+ 方式2（tree_path前缀）已覆盖所有正常组织结构场景。
     
     grades = all_grades
     print(f"[DEBUG] get_school_classes - school_id: {school_id}, found {len(grades)} grades")
@@ -1201,11 +1179,11 @@ async def get_school_grades(
         SysOrg.type == "grade"
     ).all()
     
-    # 方式2：通过 tree_path 查询属于该学校的所有年级（支持多层嵌套）
-    school_name = school.name
+    # 方式2：通过 tree_path 前缀查询（使用学校自身tree_path，避免跨学校误匹配）
     all_orgs_with_path = db.query(SysOrg).filter(
-        SysOrg.tree_path.like(f'%/{school_name}/%'),
-        SysOrg.type == 'grade'
+        SysOrg.tree_path.like(f'{school.tree_path}%'),
+        SysOrg.type == 'grade',
+        SysOrg.id != school_id
     ).all()
     
     # 合并两种查询结果（去重）
@@ -1220,31 +1198,9 @@ async def get_school_grades(
             grade_ids.add(g.id)
             all_grades.append(g)
     
-    # 方式3：递归查找所有子节点中的年级（兜底方案）
-    def find_grades_recursively(parent_id: int, visited: set = None) -> list:
-        if visited is None:
-            visited = set()
-        if parent_id in visited:
-            return []
-        visited.add(parent_id)
-        
-        grades_found = []
-        children = db.query(SysOrg).filter(SysOrg.parent_id == parent_id).all()
-        print(f"[DEBUG] find_grades_recursively: parent_id={parent_id}, found {len(children)} children")
-        for child in children:
-            print(f"[DEBUG]   Child: id={child.id}, name={child.name}, type={child.type}")
-            if child.type == 'grade' and child.id not in grade_ids:
-                grades_found.append(child)
-                grade_ids.add(child.id)
-                print(f"[DEBUG]     -> Added grade: {child.name}")
-            elif child.type in ['dept', 'campus', 'department']:  # 可能包含年级的中间层级
-                print(f"[DEBUG]     -> Recursing into {child.name}")
-                grades_found.extend(find_grades_recursively(child.id, visited))
-        return grades_found
-    
-    recursive_grades = find_grades_recursively(school_id)
-    print(f"[DEBUG] Recursive grades found: {len(recursive_grades)}")
-    all_grades.extend(recursive_grades)
+    # 不再使用递归查找（已移除）：递归会跨学段遍历所有dept/campus/department子节点，
+    # 导致同一校区下初高中年级互相污染。
+    # 方式1（parent_id直查）+ 方式2（tree_path前缀）已覆盖所有正常组织结构场景。
     
     grades = all_grades
     print(f"[DEBUG] get_school_grades - school_id: {school_id}, found {len(grades)} grades")
@@ -1962,13 +1918,13 @@ async def update_class(
             ).first()
 
             if teacher and teacher.user_id:
-                # 使用 teacher.user_id (sys_user.id) 以满足外键约束
+                # head_teacher_id 存储 sys_user.id
                 class_info.head_teacher_id = teacher.user_id
                 
                 # 同步更新 base_class_teacher 表中的 is_head_teacher
                 class_teacher_record = db.query(BaseClassTeacher).filter(
                     BaseClassTeacher.class_id == class_id,
-                    BaseClassTeacher.teacher_id == teacher.user_id
+                    BaseClassTeacher.teacher_id == teacher.id
                 ).first()
                 
                 if class_teacher_record:
@@ -1987,7 +1943,7 @@ async def update_class(
                     # 如果该教师不是该班的任课教师，添加一条班主任记录
                     new_class_teacher = BaseClassTeacher(
                         class_id=class_id,
-                        teacher_id=teacher.user_id,  # 使用 sys_user.id
+                        teacher_id=teacher.id,  # FK references base_teacher.id
                         subject="班主任",
                         is_head_teacher=1,
                         status=1
@@ -2081,29 +2037,17 @@ async def get_school_students(
     for g in all_grades:
         grade_ids.add(g.id)
     
-    # 方法2：通过 tree_path 查询
+    # 方法2：通过 tree_path 前缀查询（使用学校自身tree_path，避免跨学校误匹配）
     path_grades = db.query(SysOrg).filter(
-        SysOrg.tree_path.like(f'%/{school.name}/%'),
-        SysOrg.type == 'grade'
+        SysOrg.tree_path.like(f'{school.tree_path}%'),
+        SysOrg.type == 'grade',
+        SysOrg.id != school_id
     ).all()
     for g in path_grades:
         grade_ids.add(g.id)
     
-    # 方法3：递归查找（兜底）
-    def _find_grades_recursive(parent_id: int, visited: set = None) -> None:
-        if visited is None:
-            visited = set()
-        if parent_id in visited:
-            return
-        visited.add(parent_id)
-        children = db.query(SysOrg).filter(SysOrg.parent_id == parent_id).all()
-        for child in children:
-            if child.type == 'grade' and child.id not in grade_ids:
-                grade_ids.add(child.id)
-            elif child.type in ('dept', 'campus', 'department'):
-                _find_grades_recursive(child.id, visited)
-    
-    _find_grades_recursive(school_id)
+    # 方法3：递归查找已移除——会导致同一校区下初高中年级交叉污染。
+    # 方式1（parent_id直查）+ 方式2（tree_path前缀匹配）已足够覆盖正常组织结构。
     
     all_grade_ids = list(grade_ids)
     
@@ -2749,13 +2693,13 @@ async def update_teacher(
                     deleted = db.query(BaseClassTeacher).filter(
                         BaseClassTeacher.class_id == class_id,
                         BaseClassTeacher.subject == subject,
-                        BaseClassTeacher.teacher_id != teacher.user_id
+                        BaseClassTeacher.teacher_id != teacher.id
                     ).delete(synchronize_session=False)
                     print(f"[DEBUG] 删除班级 {class_id} 科目 {subject} 的其他教师记录: {deleted} 条")
                     
                     new_class_teacher = BaseClassTeacher(
                         class_id=class_id,
-                        teacher_id=teacher.user_id,  # 使用 sys_user.id 以满足外键约束
+                        teacher_id=teacher.id,  # FK references base_teacher.id
                         subject=subject,
                         is_head_teacher=1 if is_head_teacher else 0,
                         status=1
@@ -2870,13 +2814,17 @@ async def get_teacher_filter_options(
         BaseTeacher.positions != ""
     ).distinct().all()
 
-    positions = []
+    # 固定岗位列表，确保始终存在
+    default_positions = ['班主任', '任课教师', '年级主任', '教研组长', '教务主任', '校长', '副校长', '职工']
+    positions = list(default_positions)
+
     for (pos,) in positions_query:
         if pos:
             # Split by comma if multiple positions
             for p in pos.split(","):
                 p = p.strip()
-                if p and p not in positions:
+                # 过滤掉英文岗位，仅保留中文
+                if p and p not in positions and any('\u4e00' <= ch <= '\u9fff' for ch in p):
                     positions.append(p)
 
     # Get unique subjects from teachers
@@ -2887,6 +2835,8 @@ async def get_teacher_filter_options(
     ).distinct().all()
 
     subjects = [subject for (subject,) in subjects_query if subject]
+    # 过滤掉英文学科，仅保留中文
+    subjects = [s for s in subjects if any('\u4e00' <= ch <= '\u9fff' for ch in s)]
 
     return {
         "positions": sorted(positions),

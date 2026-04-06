@@ -4115,8 +4115,20 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
         setSelectedGrades(gradesArray);
         setView('edit');
         
-        // 加载教师的任课班级数据
         if (useApiData && teacher.id) {
+            // 确保加载编辑页面所属学校的岗位和学科数据
+            const schoolId = currentSchoolId || schoolsList.find(s => s.name === teacher.school)?.id;
+            if (schoolId && (apiPositions.length === 0 || apiSubjects.length === 0)) {
+                try {
+                    const filterResponse: any = await api.get(`/api/schools/${schoolId}/filter-options`);
+                    if (filterResponse.positions) setApiPositions(filterResponse.positions);
+                    if (filterResponse.subjects) setApiSubjects(filterResponse.subjects);
+                } catch (err) {
+                    console.error('加载岗位和学科数据失败:', err);
+                }
+            }
+
+            // 加载教师的任课班级数据
             try {
                 const response = await api.get<Teacher & { teaching_classes: TeachingClass[] }>(`/api/schools/teachers/${teacher.id}`);
                 if (response && response.teaching_classes) {
@@ -4485,14 +4497,7 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                     
                                     {isGradeDropdownOpen && (
                                         <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-60 overflow-auto">
-                                            {(useApiData && apiGrades.length > 0 ? apiGrades.map(g => ({ value: g.name, label: g.name })) : [
-                                                { value: '初一', label: '初一' },
-                                                { value: '初二', label: '初二' },
-                                                { value: '初三', label: '初三' },
-                                                { value: '高一', label: '高一' },
-                                                { value: '高二', label: '高二' },
-                                                { value: '高三', label: '高三' }
-                                            ]).map((option) => (
+                                            {(useApiData && apiGrades.length > 0 ? apiGrades.map(g => ({ value: g.name, label: g.name })) : []).map((option) => (
                                                 <label
                                                     key={option.value}
                                                     className="flex items-center px-3 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors"
@@ -4549,14 +4554,13 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
                                 >
                                     <option value="">请选择岗位</option>
-                                    <option value="班主任">班主任</option>
-                                    <option value="任课教师">任课教师</option>
-                                    <option value="年级主任">年级主任</option>
-                                    <option value="教研组长">教研组长</option>
-                                    <option value="教务主任">教务主任</option>
-                                    <option value="校长">校长</option>
-                                    <option value="副校长">副校长</option>
-                                    <option value="职工">职工</option>
+                                    {useApiData && apiPositions.length > 0 ? (
+                                        apiPositions.map((position, index) => (
+                                            <option key={index} value={position}>{position}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>暂无岗位数据</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -4568,15 +4572,13 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
                                 >
                                     <option value="">请选择学科</option>
-                                    <option value="语文">语文</option>
-                                    <option value="数学">数学</option>
-                                    <option value="英语">英语</option>
-                                    <option value="物理">物理</option>
-                                    <option value="化学">化学</option>
-                                    <option value="生物">生物</option>
-                                    <option value="政治">政治</option>
-                                    <option value="历史">历史</option>
-                                    <option value="地理">地理</option>
+                                    {useApiData && apiSubjects.length > 0 ? (
+                                        apiSubjects.map((subject, index) => (
+                                            <option key={index} value={subject}>{subject}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>暂无学科数据</option>
+                                    )}
                                 </select>
                             </div>
                         </div>
@@ -4682,15 +4684,13 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
                                         >
                                             <option value="">选择学科</option>
-                                            <option value="语文">语文</option>
-                                            <option value="数学">数学</option>
-                                            <option value="英语">英语</option>
-                                            <option value="物理">物理</option>
-                                            <option value="化学">化学</option>
-                                            <option value="生物">生物</option>
-                                            <option value="政治">政治</option>
-                                            <option value="历史">历史</option>
-                                            <option value="地理">地理</option>
+                                            {useApiData && apiSubjects.length > 0 ? (
+                                                apiSubjects.map((subject, index) => (
+                                                    <option key={index} value={subject}>{subject}</option>
+                                                ))
+                                            ) : (
+                                                <option value="" disabled>暂无学科数据</option>
+                                            )}
                                         </select>
                                     </div>
                                     <label className="flex items-center space-x-2 py-2 cursor-pointer">
@@ -4904,16 +4904,7 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                 apiGrades.map(grade => (
                                     <option key={grade.id} value={grade.name}>{grade.name}</option>
                                 ))
-                            ) : (
-                                <>
-                                    <option value="初一">初一</option>
-                                    <option value="初二">初二</option>
-                                    <option value="初三">初三</option>
-                                    <option value="高一">高一</option>
-                                    <option value="高二">高二</option>
-                                    <option value="高三">高三</option>
-                                </>
-                            )}
+                            ) : null}
                         </select>
                     </div>
                     
@@ -4930,18 +4921,7 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                 apiPositions.map((position, index) => (
                                     <option key={index} value={position}>{position}</option>
                                 ))
-                            ) : (
-                                <>
-                                    <option value="班主任">班主任</option>
-                                    <option value="任课教师">任课教师</option>
-                                    <option value="年级主任">年级主任</option>
-                                    <option value="教研组长">教研组长</option>
-                                    <option value="教务主任">教务主任</option>
-                                    <option value="校长">校长</option>
-                                    <option value="副校长">副校长</option>
-                                    <option value="职工">职工</option>
-                                </>
-                            )}
+                            ) : null}
                         </select>
                     </div>
                     
@@ -4958,25 +4938,7 @@ const TeacherList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                 apiSubjects.map((subject, index) => (
                                     <option key={index} value={subject}>{subject}</option>
                                 ))
-                            ) : (
-                                <>
-                                    <option value="语文">语文</option>
-                                    <option value="数学">数学</option>
-                                    <option value="英语">英语</option>
-                                    <option value="物理">物理</option>
-                                    <option value="化学">化学</option>
-                                    <option value="生物">生物</option>
-                                    <option value="政治">政治</option>
-                                    <option value="历史">历史</option>
-                                    <option value="地理">地理</option>
-                                    <option value="音乐">音乐</option>
-                                    <option value="美术">美术</option>
-                                    <option value="体育">体育</option>
-                                    <option value="信息技术">信息技术</option>
-                                    <option value="通用技术">通用技术</option>
-                                    <option value="心理">心理</option>
-                                </>
-                            )}
+                            ) : null}
                         </select>
                     </div>
                     
@@ -5236,7 +5198,6 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
   
   // 学校列表状态
   const [schools, setSchools] = useState<Array<{id: number, name: string}>>([]);
-  const [allClasses, setAllClasses] = useState<Array<{id: number, name: string, gradeId: number, gradeName: string, schoolName: string, schoolId: number}>>([]);
   
   // 导入相关状态
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -5256,6 +5217,56 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
   const [importTargetGrade, setImportTargetGrade] = useState('');
   const [importTargetClass, setImportTargetClass] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [importGradeOptions, setImportGradeOptions] = useState<string[]>([]);
+  const [importClassOptions, setImportClassOptions] = useState<{id: number, name: string}[]>([]);
+  // 缓存已加载的年级数据（schoolId -> [{id, name}]），供编辑页和导入弹窗共用
+  const [editGradesCache, setEditGradesCache] = useState<Record<number, {id: number, name: string}[]>>({});
+
+  // 导入弹窗：学校变化时加载年级
+  useEffect(() => {
+    if (importTargetSchool && schools.length > 0) {
+      const selectedSchool = schools.find(s => s.name === importTargetSchool);
+      if (selectedSchool) {
+        // 复用 editGradesCache
+        const cached = editGradesCache[selectedSchool.id];
+        if (cached) {
+          setImportGradeOptions(cached.map(g => g.name).sort((a, b) => getGradeSortWeight(a) - getGradeSortWeight(b)));
+        } else {
+          api.get(`/api/schools/${selectedSchool.id}/grades`).then((resp: any) => {
+            const grades = resp?.grades || resp || [];
+            const mapped = (Array.isArray(grades) ? grades : []).map((g: any) => ({ id: g.id, name: g.name }));
+            setEditGradesCache(prev => ({ ...prev, [selectedSchool.id]: mapped }));
+            setImportGradeOptions(mapped.map(g => g.name).sort((a, b) => getGradeSortWeight(a) - getGradeSortWeight(b)));
+          }).catch(() => setImportGradeOptions([]));
+        }
+      }
+    } else {
+      setImportGradeOptions([]);
+    }
+    setImportTargetGrade('');
+    setImportClassOptions([]);
+    setImportTargetClass('');
+  }, [importTargetSchool, schools, editGradesCache]);
+
+  // 导入弹窗：年级变化时加载班级
+  useEffect(() => {
+    if (importTargetSchool && importTargetGrade && schools.length > 0) {
+      const selectedSchool = schools.find(s => s.name === importTargetSchool);
+      if (selectedSchool) {
+        const cachedGrades = editGradesCache[selectedSchool.id] || [];
+        const selectedGrade = cachedGrades.find(g => g.name === importTargetGrade);
+        if (selectedGrade) {
+          api.get(`/api/schools/${selectedSchool.id}/grades/${selectedGrade.id}/classes`).then((resp: any) => {
+            const classes = resp?.classes || resp || [];
+            setImportClassOptions((Array.isArray(classes) ? classes : []).map((c: any) => ({ id: c.id, name: c.name })));
+          }).catch(() => setImportClassOptions([]));
+        }
+      }
+    } else {
+      setImportClassOptions([]);
+    }
+    setImportTargetClass('');
+  }, [importTargetGrade, importTargetSchool, schools, editGradesCache]);
 
   // Filter States
   const [filterSchool, setFilterSchool] = useState('');
@@ -5417,121 +5428,83 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
     }
   }, [filterGrade, filterSchool, useApiData]);
 
-  // 根据班级数据生成新增学生所需的年级和班级选项
+  // 编辑页面年级/班级选项（与列表筛选器使用相同API，确保数据一致）
   const [newStudentGradeOptions, setNewStudentGradeOptions] = useState<string[]>([]);
   const [newStudentClassOptions, setNewStudentClassOptions] = useState<string[]>([]);
 
-  // 当选择的学校变化时，更新年级选项
+  // 当选择的学校变化时，从 /grades API 加载年级选项（与列表筛选器一致）
   useEffect(() => {
-    if (editForm && editForm.school && allClasses.length > 0) {
-      // 根据所选学校过滤年级
-      const grades = Array.from(new Set(
-        allClasses
-          .filter(c => c.schoolName === editForm.school)
-          .map(c => c.gradeName)
-          .filter(Boolean)
-      )).sort();
-      setNewStudentGradeOptions(grades);
-      console.log('新增学生年级选项（按学校过滤）:', grades);
+    if (editForm && editForm.school && schools.length > 0) {
+      const selectedSchool = schools.find(s => s.name === editForm.school);
+      if (selectedSchool) {
+        loadEditGrades(selectedSchool.id);
+      } else {
+        setNewStudentGradeOptions([]);
+      }
     } else {
       setNewStudentGradeOptions([]);
     }
-  }, [editForm?.school, allClasses]);
+  }, [editForm?.school, schools]);
 
-  // 当选择的年级变化时，更新班级选项
+  const loadEditGrades = async (schoolId: number) => {
+    try {
+      const response: any = await api.get(`/api/schools/${schoolId}/grades`);
+      let gradeList: {id: number, name: string}[] = [];
+      if (response && Array.isArray(response.grades)) {
+        gradeList = response.grades.map((g: any) => ({ id: g.id, name: g.name }));
+      } else if (Array.isArray(response)) {
+        gradeList = response.map((g: any) => ({ id: g.id, name: g.name }));
+      }
+      setEditGradesCache(prev => ({ ...prev, [schoolId]: gradeList }));
+      const gradeNames = gradeList.map(g => g.name).sort((a, b) => getGradeSortWeight(a) - getGradeSortWeight(b));
+      setNewStudentGradeOptions(gradeNames);
+      console.log('编辑页年级选项（API加载）:', gradeNames, 'schoolId:', schoolId);
+    } catch (err) {
+      console.error('编辑页加载年级失败:', err);
+      setNewStudentGradeOptions([]);
+    }
+  };
+
+  // 当选择的年级变化时，从 /grades/{id}/classes API 加载班级选项（与列表筛选器一致）
   useEffect(() => {
-    if (editForm && editForm.grade && editForm.school && allClasses.length > 0) {
-      // 根据所选学校和年级过滤班级
-      const classes = allClasses
-        .filter(c => c.schoolName === editForm.school && c.gradeName === editForm.grade)
-        .map(c => c.name)
-        .sort();
-      setNewStudentClassOptions(classes);
-      console.log('新增学生班级选项（按学校和年级过滤）:', classes);
+    if (editForm && editForm.grade && editForm.school && schools.length > 0) {
+      const selectedSchool = schools.find(s => s.name === editForm.school);
+      if (selectedSchool) {
+        const cachedGrades = editGradesCache[selectedSchool.id] || [];
+        const selectedGrade = cachedGrades.find(g => g.name === editForm.grade);
+        if (selectedGrade) {
+          loadEditClasses(selectedSchool.id, selectedGrade.id);
+        } else {
+          // 缓存未命中，重新加载年级列表
+          loadEditGrades(selectedSchool.id).then(() => {
+            const grades = editGradesCache[selectedSchool.id] || [];
+            const grade = grades.find(g => g.name === editForm.grade);
+            if (grade) loadEditClasses(selectedSchool.id, grade.id);
+          });
+        }
+      }
     } else {
       setNewStudentClassOptions([]);
     }
-  }, [editForm?.grade, editForm?.school, allClasses]);
+  }, [editForm?.grade, editForm?.school, editGradesCache, schools]);
+
+  const loadEditClasses = async (schoolId: number, gradeId: number) => {
+    try {
+      const response: any = await api.get(`/api/schools/${schoolId}/grades/${gradeId}/classes`);
+      const classList = response.classes || response || [];
+      const classNames = (Array.isArray(classList) ? classList : []).map((c: any) => c.name).sort();
+      setNewStudentClassOptions(classNames);
+      console.log('编辑页班级选项（API加载）:', classNames, 'schoolId:', schoolId, 'gradeId:', gradeId);
+    } catch (err) {
+      console.error('编辑页加载班级失败:', err);
+      setNewStudentClassOptions([]);
+    }
+  };
 
   // 从API加载学生数据
   useEffect(() => {
     if (useApiData) {
       loadStudentsFromApi();
-    }
-  }, [useApiData]);
-
-  // 加载所有班级数据（用于新增学生）
-  const loadAllClasses = async () => {
-    try {
-      const schoolsResponse: any = await api.get('/api/schools/list');
-      if (!schoolsResponse.schools || schoolsResponse.schools.length === 0) {
-        return;
-      }
-
-      const allSchools = schoolsResponse.schools;
-
-      // 加载所有学校的班级数据
-      let allClassesData: any[] = [];
-      const apiPageSize = 100;  // API每次请求的最大条数
-
-      for (const school of allSchools) {
-        let currentPage = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-          try {
-            const classesResponse: any = await api.get(`/api/schools/${school.id}/classes`, {
-              params: {
-                page: currentPage,
-                page_size: apiPageSize
-              }
-            });
-
-            const classes = classesResponse.classes || [];
-            // 为每个班级添加学校信息
-            const classesWithSchool = classes.map((cls: any) => ({
-              ...cls,
-              schoolName: school.name,
-              schoolId: school.id
-            }));
-            allClassesData = [...allClassesData, ...classesWithSchool];
-
-            // 检查是否还有更多数据
-            if (classes.length < apiPageSize) {
-              hasMore = false;
-            } else {
-              currentPage++;
-            }
-          } catch (err) {
-            console.error(`加载学校 ${school.name} 的班级数据失败:`, err);
-            hasMore = false;
-          }
-        }
-      }
-
-      if (allClassesData.length > 0) {
-        // 格式化班级数据，包含年级和学校信息
-        const formattedClasses = allClassesData.map((cls: any) => ({
-          id: cls.id,
-          name: cls.name,
-          gradeId: 0, // API返回的班级数据中不包含年级ID
-          gradeName: cls.grade || '', // 使用API返回的grade字段
-          schoolName: cls.schoolName || '', // 学校名称
-          schoolId: cls.schoolId || 0 // 学校ID
-        }));
-
-        setAllClasses(formattedClasses);
-        console.log('加载的班级数据:', formattedClasses);
-      }
-    } catch (err) {
-      console.error('加载班级数据失败:', err);
-    }
-  };
-
-  // 加载班级数据
-  useEffect(() => {
-    if (useApiData) {
-      loadAllClasses();
     }
   }, [useApiData]);
 
@@ -5759,11 +5732,28 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                   gender: editForm.gender === '男' ? 'M' : editForm.gender === '女' ? 'F' : 'M',
                 };
                 
-                // 只在有值时才发送宿舍相关字段，避免覆盖为空值
-                if (editForm.building) studentData.dorm_building = editForm.building;
-                if (editForm.floor != null && editForm.floor !== 0) studentData.dorm_floor = editForm.floor;
-                if (editForm.dorm) studentData.dorm_room = editForm.dorm;
-                if (editForm.bedNo != null && editForm.bedNo !== 0) studentData.bed_no = editForm.bedNo;
+                // 如果年级和班级有值，查找对应的class_id发送给后端
+                if (editForm.grade && editForm.class) {
+                  const selectedSchool = schools.find(s => s.name === editForm.school);
+                  if (selectedSchool) {
+                    const cachedGrades = editGradesCache[selectedSchool.id] || [];
+                    const selectedGrade = cachedGrades.find(g => g.name === editForm.grade);
+                    if (selectedGrade) {
+                      const classResponse: any = await api.get(`/api/schools/${selectedSchool.id}/grades/${selectedGrade.id}/classes`);
+                      const classList = classResponse.classes || classResponse || [];
+                      const matchedClass = (Array.isArray(classList) ? classList : []).find((c: any) => c.name === editForm.class);
+                      if (matchedClass) {
+                        studentData.class_id = matchedClass.id;
+                      }
+                    }
+                  }
+                }
+                
+                // 宿舍相关字段：始终发送当前值（包括清空的情况）
+                studentData.dorm_building = editForm.building || '';
+                studentData.dorm_floor = editForm.floor || null;
+                studentData.dorm_room = editForm.dorm || '';
+                studentData.bed_no = editForm.bedNo || null;
                 
                 await api.put(`/api/students/${editForm.id}`, studentData);
                 toast.success('学生信息保存成功！');
@@ -5810,14 +5800,19 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
         try {
           setLoading(true);
 
-          // 根据选择的年级和班级名称找到对应的班级ID
+          // 根据选择的年级和班级名称找到对应的班级ID（通过API查询）
           let classId: number | null = null;
           if (editForm.grade && editForm.class) {
-            const matchedClass = allClasses.find(
-              c => c.gradeName === editForm.grade && c.name === editForm.class
-            );
-            if (matchedClass) {
-              classId = matchedClass.id;
+            const selectedSchool = schools.find(s => s.name === editForm.school);
+            if (selectedSchool) {
+              const cachedGrades = editGradesCache[selectedSchool.id] || [];
+              const selectedGrade = cachedGrades.find(g => g.name === editForm.grade);
+              if (selectedGrade) {
+                const classResponse: any = await api.get(`/api/schools/${selectedSchool.id}/grades/${selectedGrade.id}/classes`);
+                const classList = classResponse.classes || classResponse || [];
+                const matchedClass = (Array.isArray(classList) ? classList : []).find((c: any) => c.name === editForm.class);
+                if (matchedClass) classId = matchedClass.id;
+              }
             }
           }
 
@@ -6073,19 +6068,28 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
           for (const [key, students] of Object.entries(groupedByClass)) {
               const [gradeName, className] = key.split('-');
               
-              // 查找班级ID
-              const targetClassInfo = allClasses.find(
-                  c => c.gradeName === gradeName && c.name === className
-              );
+              // 通过API查找班级ID
+              let targetClassId: number | null = null;
+              const importSchool = schools.find(s => s.name === importTargetSchool);
+              if (importSchool) {
+                const cachedGrades = editGradesCache[importSchool.id] || [];
+                const importGrade = cachedGrades.find((g: any) => g.name === gradeName);
+                if (importGrade) {
+                  const classResponse: any = await api.get(`/api/schools/${importSchool.id}/grades/${importGrade.id}/classes`);
+                  const classList = classResponse.classes || classResponse || [];
+                  const matchedClass = (Array.isArray(classList) ? classList : []).find((c: any) => c.name === className);
+                  if (matchedClass) targetClassId = matchedClass.id;
+                }
+              }
               
-              if (!targetClassInfo) {
+              if (!targetClassId) {
                   allErrors.push({ class: key, message: '未找到目标班级' });
                   totalFailed += students.length;
                   continue;
               }
               
               const response: any = await api.post('/api/schools/students/import', {
-                  class_id: targetClassInfo.id,
+                  class_id: targetClassId,
                   students: students.map(s => ({
                       name: s.name,
                       gender: s.gender === '男' ? 'M' : s.gender === '女' ? 'F' : null,
@@ -6387,18 +6391,12 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                   className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 >
                   <option value="">请选择年级</option>
-                  {useApiData ? (
+                  {newStudentGradeOptions.length > 0 ? (
                     newStudentGradeOptions.map(grade => (
                       <option key={grade} value={grade}>{grade}</option>
                     ))
                   ) : (
-                    <>
-                      <option value="初一">初一</option>
-                      <option value="初二">初二</option>
-                      <option value="高一">高一</option>
-                      <option value="高二">高二</option>
-                      <option value="高三">高三</option>
-                    </>
+                    <option value="" disabled>暂无年级数据</option>
                   )}
                 </select>
               </div>
@@ -6411,17 +6409,12 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                   className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
                 >
                   <option value="">请选择班级</option>
-                  {useApiData ? (
+                  {newStudentClassOptions.length > 0 ? (
                     newStudentClassOptions.map(cls => (
                       <option key={cls} value={cls}>{cls}</option>
                     ))
                   ) : (
-                    <>
-                      <option value="37班">37班</option>
-                      <option value="38班">38班</option>
-                      <option value="1班">1班</option>
-                      <option value="2班">2班</option>
-                    </>
+                    <option value="" disabled>请先选择年级</option>
                   )}
                 </select>
               </div>
@@ -6565,11 +6558,10 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                 onChange={(e) => setEditForm({...editForm, grade: e.target.value})}
                                 className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                             >
-                                <option value="初一">初一</option>
-                                <option value="初二">初二</option>
-                                <option value="高一">高一</option>
-                                <option value="高二">高二</option>
-                                <option value="高三">高三</option>
+                                <option value="">请选择年级</option>
+                                {newStudentGradeOptions.map(grade => (
+                                    <option key={grade} value={grade}>{grade}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="flex items-center space-x-4">
@@ -6579,9 +6571,10 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                 onChange={(e) => setEditForm({...editForm, class: e.target.value})}
                                 className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                             >
-                                <option value="37班">37班</option>
-                                <option value="38班">38班</option>
-                                <option value="1班">1班</option>
+                                <option value="">请选择班级</option>
+                                {newStudentClassOptions.map(cls => (
+                                    <option key={cls} value={cls}>{cls}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -7006,21 +6999,7 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                     disabled={!importTargetSchool}
                                 >
                                     <option value="">请选择年级</option>
-                                    {Array.from(new Set(allClasses
-                                        .filter(c => c.schoolName === importTargetSchool && c.gradeName)
-                                        .map(c => c.gradeName)
-                                    ) as unknown as string[]).sort((a, b) => {
-                                        // 年级排序：小学(1-6) < 初中(1-3) < 高中(1-3)
-                                        const getGradeOrder = (name: string): number => {
-                                            const orderMap: Record<string, number> = {
-                                                '一年级': 1, '二年级': 2, '三年级': 3, '四年级': 4, '五年级': 5, '六年级': 6,
-                                                '初一': 7, '初二': 8, '初三': 9,
-                                                '高一': 10, '高二': 11, '高三': 12
-                                            };
-                                            return orderMap[name] || 99;
-                                        };
-                                        return getGradeOrder(a) - getGradeOrder(b);
-                                    }).map(grade => (
+                                    {importGradeOptions.map(grade => (
                                         <option key={grade} value={grade}>{grade}</option>
                                     ))}
                                 </select>
@@ -7034,12 +7013,9 @@ const StudentList: React.FC<{ useApiData?: boolean }> = ({ useApiData = true }) 
                                     disabled={!importTargetGrade}
                                 >
                                     <option value="">请选择班级</option>
-                                    {allClasses
-                                        .filter(c => c.schoolName === importTargetSchool && c.gradeName === importTargetGrade)
-                                        .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
-                                        .map(cls => (
-                                            <option key={cls.id} value={cls.name}>{cls.name}</option>
-                                        ))}
+                                    {importClassOptions.map(cls => (
+                                        <option key={cls.id} value={cls.name}>{cls.name}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
