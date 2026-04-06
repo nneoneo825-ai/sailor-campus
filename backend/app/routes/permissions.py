@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.role import SysRole, SysPermission
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, is_builtin_admin
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -186,7 +187,15 @@ async def update_role_permissions(
 ) -> Any:
     """
     Update permissions for a specific role
+    仅管理员可修改角色权限
     """
+    # 权限校验
+    if not is_builtin_admin(current_user):
+        from app.utils.data_scope import get_user_data_scope
+        scope = get_user_data_scope(db, current_user)
+        if not scope.has_all:
+            raise HTTPException(status_code=403, detail="仅管理员可修改角色权限")
+
     print(f"[API] Updating role permissions: role_id={role_id}, permission_ids={data.permission_ids}")
     
     role = db.query(SysRole).filter(SysRole.id == role_id).first()
@@ -199,7 +208,7 @@ async def update_role_permissions(
     try:
         # Clear existing permissions
         result = db.execute(
-            "DELETE FROM sys_role_permission WHERE role_id = :role_id",
+            text("DELETE FROM sys_role_permission WHERE role_id = :role_id"),
             {"role_id": role_id}
         )
         print(f"[API] Cleared {result.rowcount} existing permissions")
@@ -217,7 +226,7 @@ async def update_role_permissions(
 
         for perm_id in valid_permission_ids:
             db.execute(
-                "INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)",
+                text("INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)"),
                 {"role_id": role_id, "permission_id": perm_id}
             )
 
@@ -303,7 +312,7 @@ def assign_default_permissions(db: Session):
         for perm_id in all_perm_ids:
             try:
                 db.execute(
-                    "INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)",
+                    text("INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)"),
                     {"role_id": admin_role.id, "permission_id": perm_id}
                 )
             except IntegrityError:
@@ -318,7 +327,7 @@ def assign_default_permissions(db: Session):
         for perm_id in principal_perms:
             try:
                 db.execute(
-                    "INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)",
+                    text("INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)"),
                     {"role_id": principal_role.id, "permission_id": perm_id}
                 )
             except IntegrityError:
@@ -332,7 +341,7 @@ def assign_default_permissions(db: Session):
         for perm_id in teacher_perms:
             try:
                 db.execute(
-                    "INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)",
+                    text("INSERT INTO sys_role_permission (role_id, permission_id) VALUES (:role_id, :permission_id)"),
                     {"role_id": teacher_role.id, "permission_id": perm_id}
                 )
             except IntegrityError:

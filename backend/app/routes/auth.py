@@ -316,25 +316,12 @@ async def register(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Register a new user
+    Register a new user (disabled in production for security)
     """
-    user = db.query(SysUser).filter(SysUser.username == username).first()
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
-
-    hashed_password = get_password_hash(password)
-    db_user = SysUser(
-        username=username,
-        password=hashed_password,
-        real_name=real_name
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="注册功能已关闭，请联系管理员创建账号"
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return {"message": "User created successfully"}
 
 
 @router.get("/me")

@@ -87,10 +87,12 @@ async def get_users(
 
     # Search by keyword (username, real_name)
     if keyword:
+        # 转义 LIKE 通配符防止注入
+        safe_keyword = keyword.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         query = query.filter(
             or_(
-                SysUser.username.like(f"%{keyword}%"),
-                SysUser.real_name.like(f"%{keyword}%")
+                SysUser.username.like(f"%{safe_keyword}%", escape='\\'),
+                SysUser.real_name.like(f"%{safe_keyword}%", escape='\\')
             )
         )
 
@@ -291,9 +293,22 @@ async def update_user(
     user = db.query(SysUser).filter(SysUser.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    scope = get_user_data_scope(db, current_user)
+    if user_id != current_user.id and not scope.has_all:
+        raise HTTPException(status_code=403, detail="只能修改自己的密码")
     
     # 检查是否有权限修改该用户
-    if not scope.has_all:
+    if user.id == current_user.id:
+        # 修改自己：禁止修改角色、状态、组织（防提权）
+        if user_data.role_ids is not None:
+            raise HTTPException(status_code=403, detail="不能修改自己的角色")
+        if user_data.status is not None:
+            raise HTTPException(status_code=403, detail="不能修改自己的状态")
+        if user_data.org_id is not None and user_data.org_id != user.org_id:
+            raise HTTPException(status_code=403, detail="不能修改自己的组织")
+    elif not scope.has_all:
         accessible_org_ids = set()
         accessible_org_ids.update(scope.school_ids)
         accessible_org_ids.update(scope.grade_ids)
@@ -301,7 +316,7 @@ async def update_user(
         accessible_org_ids.update(scope.teaching_group_ids)
         accessible_org_ids.update(scope.department_ids)
         
-        if user.org_id not in accessible_org_ids and user.id != current_user.id:
+        if user.org_id not in accessible_org_ids:
             raise HTTPException(status_code=403, detail="无权限修改该用户信息")
         
         # 如果要修改组织，检查是否有权限将用户移动到新组织
@@ -377,6 +392,11 @@ async def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    scope = get_user_data_scope(db, current_user)
+    if user_id != current_user.id and not scope.has_all:
+        raise HTTPException(status_code=403, detail="只能修改自己的密码")
+
     # Check if trying to delete self
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="不能删除自己")
@@ -440,6 +460,16 @@ async def update_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    scope = get_user_data_scope(db, current_user)
+    if user_id != current_user.id and not scope.has_all:
+        raise HTTPException(status_code=403, detail="只能修改自己的密码")
+
+    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    scope = get_user_data_scope(db, current_user)
+    if user_id != current_user.id and not scope.has_all:
+        raise HTTPException(status_code=403, detail="只能修改自己的密码")
+
     # Verify old password (skip verification if changing default password)
     if user.password_changed:
         if not verify_password(password_data.old_password, user.password):
@@ -479,9 +509,19 @@ async def update_user_status(
     """
     Enable or disable user
     """
+    scope = get_user_data_scope(db, current_user)
+
+    if not scope.has_all:
+        raise HTTPException(status_code=403, detail="仅管理员可修改用户状态")
+
     user = db.query(SysUser).filter(SysUser.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 权限校验：只能修改自己的密码，管理员可修改他人密码
+    scope = get_user_data_scope(db, current_user)
+    if user_id != current_user.id and not scope.has_all:
+        raise HTTPException(status_code=403, detail="只能修改自己的密码")
 
     # Check if trying to disable self
     if user_id == current_user.id and status == 0:

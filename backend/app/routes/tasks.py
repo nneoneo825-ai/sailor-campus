@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.task import ScheduleTask, TaskNotification
 from app.models.user import SysUser
-from app.utils.deps import get_current_user
+from app.utils.deps import get_current_active_user
 
 router = APIRouter(prefix="/api/tasks", tags=["日程任务"])
 
@@ -79,20 +79,20 @@ class TaskResponse(BaseModel):
 
 @router.get("", response_model=dict)
 async def get_tasks(
-    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD"),
+    start_date: Optional[str] = Query(None, description="开始日�?YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
     task_date: Optional[str] = Query(None, description="指定日期 YYYY-MM-DD"),
-    status: Optional[str] = Query(None, description="任务状态"),
+    status: Optional[str] = Query(None, description="任务状�?),
     task_type: Optional[str] = Query(None, description="任务类型"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """获取任务列表"""
     query = db.query(ScheduleTask).filter(ScheduleTask.deleted_at.is_(None))
     
-    # 筛选用户可看到的任务：自己创建的 或 指派给自己的 或 指派给部门的
+    # 筛选用户可看到的任务：自己创建�?�?指派给自己的 �?指派给部门的
     query = query.filter(
         or_(
             ScheduleTask.creator_id == current_user.id,
@@ -104,8 +104,7 @@ async def get_tasks(
         )
     )
     
-    # 日期筛选
-    if task_date:
+    # 日期筛�?    if task_date:
         query = query.filter(ScheduleTask.task_date == task_date)
     elif start_date and end_date:
         query = query.filter(
@@ -113,12 +112,10 @@ async def get_tasks(
             ScheduleTask.task_date <= end_date
         )
     
-    # 状态筛选
-    if status:
+    # 状态筛�?    if status:
         query = query.filter(ScheduleTask.status == status)
     
-    # 类型筛选
-    if task_type:
+    # 类型筛�?    if task_type:
         query = query.filter(ScheduleTask.task_type == task_type)
     
     # 排序
@@ -145,7 +142,7 @@ async def get_calendar_tasks(
     year: int = Query(..., description="年份"),
     month: int = Query(..., description="月份 1-12"),
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """获取日历视图的任务（按日期分组）"""
     # 构建月份日期范围
@@ -161,8 +158,7 @@ async def get_calendar_tasks(
         ScheduleTask.task_date < end_date
     )
     
-    # 筛选用户可看到的任务
-    query = query.filter(
+    # 筛选用户可看到的任�?    query = query.filter(
         or_(
             ScheduleTask.creator_id == current_user.id,
             ScheduleTask.assignee_id == current_user.id,
@@ -175,8 +171,7 @@ async def get_calendar_tasks(
     
     tasks = query.order_by(ScheduleTask.task_date, ScheduleTask.start_time).all()
     
-    # 按日期分组
-    calendar_data = {}
+    # 按日期分�?    calendar_data = {}
     for task in tasks:
         date_key = str(task.task_date)[:10] if isinstance(task.task_date, datetime) else str(task.task_date)
         if date_key not in calendar_data:
@@ -206,14 +201,14 @@ async def get_calendar_tasks(
 async def create_task(
     task_data: TaskCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """创建任务"""
     # 解析日期
     try:
         task_date = datetime.strptime(task_data.task_date, "%Y-%m-%d").date()
     except ValueError:
-        raise HTTPException(status_code=400, detail="日期格式错误，应为 YYYY-MM-DD")
+        raise HTTPException(status_code=400, detail="日期格式错误，应�?YYYY-MM-DD")
     
     # 创建任务
     task = ScheduleTask(
@@ -258,7 +253,7 @@ async def create_task(
 async def get_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """获取任务详情"""
     task = db.query(ScheduleTask).filter(
@@ -267,11 +262,10 @@ async def get_task(
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="任务不存�?)
     
-    # 检查权限
-    if not _can_access(task, current_user):
-        raise HTTPException(status_code=403, detail="无权访问此任务")
+    # 检查权�?    if not _can_access(task, current_user):
+        raise HTTPException(status_code=403, detail="无权访问此任�?)
     
     return {
         "code": 0,
@@ -285,7 +279,7 @@ async def update_task(
     task_id: int,
     task_data: TaskUpdate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """更新任务"""
     task = db.query(ScheduleTask).filter(
@@ -294,11 +288,10 @@ async def update_task(
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="任务不存�?)
     
-    # 只有创建者可以修改
-    if task.creator_id != current_user.id:
-        raise HTTPException(status_code=403, detail="只有任务创建者可以修改")
+    # 只有创建者可以修�?    if task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="只有任务创建者可以修�?)
     
     # 更新字段
     update_data = task_data.model_dump(exclude_unset=True)
@@ -326,7 +319,7 @@ async def complete_task(
     task_id: int,
     complete_data: TaskComplete,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
     """完成任务"""
     task = db.query(ScheduleTask).filter(
@@ -335,14 +328,13 @@ async def complete_task(
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="任务不存�?)
     
-    # 检查是否可以完成任务
-    if not _can_access(task, current_user):
-        raise HTTPException(status_code=403, detail="无权操作此任务")
+    # 检查是否可以完成任�?    if not _can_access(task, current_user):
+        raise HTTPException(status_code=403, detail="无权操作此任�?)
     
     if task.status == 'completed':
-        raise HTTPException(status_code=400, detail="任务已完成")
+        raise HTTPException(status_code=400, detail="任务已完�?)
     
     task.status = 'completed'
     task.completed_at = datetime.now()
@@ -354,7 +346,7 @@ async def complete_task(
     
     return {
         "code": 0,
-        "message": "任务已完成",
+        "message": "任务已完�?,
         "data": _format_task(task)
     }
 
@@ -363,29 +355,29 @@ async def complete_task(
 async def start_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
-    """开始执行任务"""
+    """开始执行任�?""
     task = db.query(ScheduleTask).filter(
         ScheduleTask.id == task_id,
         ScheduleTask.deleted_at.is_(None)
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="任务不存�?)
     
     if not _can_access(task, current_user):
-        raise HTTPException(status_code=403, detail="无权操作此任务")
+        raise HTTPException(status_code=403, detail="无权操作此任�?)
     
     if task.status != 'pending':
-        raise HTTPException(status_code=400, detail="只有待处理的任务可以开始")
+        raise HTTPException(status_code=400, detail="只有待处理的任务可以开�?)
     
     task.status = 'in_progress'
     db.commit()
     
     return {
         "code": 0,
-        "message": "任务已开始",
+        "message": "任务已开�?,
         "data": _format_task(task)
     }
 
@@ -394,20 +386,19 @@ async def start_task(
 async def delete_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user)
+    current_user: SysUser = Depends(get_current_active_user)
 ):
-    """删除任务（软删除）"""
+    """删除任务（软删除�?""
     task = db.query(ScheduleTask).filter(
         ScheduleTask.id == task_id,
         ScheduleTask.deleted_at.is_(None)
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="任务不存�?)
     
-    # 只有创建者可以删除
-    if task.creator_id != current_user.id:
-        raise HTTPException(status_code=403, detail="只有任务创建者可以删除")
+    # 只有创建者可以删�?    if task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="只有任务创建者可以删�?)
     
     task.deleted_at = datetime.now()
     task.deleted_by = current_user.id
@@ -422,7 +413,7 @@ async def delete_task(
 # ==================== 辅助函数 ====================
 
 def _format_task(task: ScheduleTask) -> dict:
-    """格式化任务数据"""
+    """格式化任务数�?""
     task_date_str = str(task.task_date)[:10] if isinstance(task.task_date, datetime) else str(task.task_date)
     return {
         "id": task.id,
@@ -448,7 +439,7 @@ def _format_task(task: ScheduleTask) -> dict:
 
 
 def _can_access(task: ScheduleTask, user: SysUser) -> bool:
-    """检查用户是否可以访问任务"""
+    """检查用户是否可以访问任�?""
     if task.creator_id == user.id:
         return True
     if task.assignee_id == user.id:

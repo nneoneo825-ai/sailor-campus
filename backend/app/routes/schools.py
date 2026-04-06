@@ -21,6 +21,13 @@ from app.utils.deps import get_current_active_user
 from app.utils.data_scope import get_user_data_scope
 from app.utils.auth import get_password_hash
 
+
+def _check_school_write_permission(db: Session, current_user: Any, school_id: int):
+    """检查用户是否有权在指定学校执行写操作"""
+    scope = get_user_data_scope(db, current_user)
+    if not scope.has_all and school_id not in scope.school_ids:
+        raise HTTPException(status_code=403, detail="无权限操作该学校的数据")
+
 router = APIRouter()
 
 
@@ -131,7 +138,7 @@ def create_user_for_teacher(db: Session, teacher: BaseTeacher, school_id: int) -
     teacher_role = db.query(SysRole).filter(SysRole.code == "ROLE_TEACHER").first()
     if teacher_role:
         db.execute(
-            "INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)",
+            text("INSERT INTO sys_user_role (user_id, role_id) VALUES (:user_id, :role_id)"),
             {"user_id": db_user.id, "role_id": teacher_role.id}
         )
     
@@ -924,6 +931,7 @@ async def save_upgrade_settings(
     """
     Save upgrade settings for a school
     """
+    _check_school_write_permission(db, current_user, school_id)
     # Verify school exists
     school = db.query(SysOrg).filter(
         SysOrg.id == school_id,
@@ -992,6 +1000,7 @@ async def batch_upgrade_classes(
     """
     Batch upgrade classes to a new grade
     """
+    _check_school_write_permission(db, current_user, school_id)
     school = db.query(SysOrg).filter(
         SysOrg.id == school_id,
         SysOrg.type == "school"
@@ -1701,6 +1710,7 @@ async def create_class(
     """
     Create a new class under a school
     """
+    _check_school_write_permission(db, current_user, school_id)
     # Verify school exists
     school = db.query(SysOrg).filter(
         SysOrg.id == school_id,
@@ -1806,6 +1816,9 @@ async def update_class(
     current_user: SysUser = Depends(get_current_active_user)
 ) -> Any:
     """
+    Update class information (head teacher)
+    """
+    _check_school_write_permission(db, current_user, school_id)
     Update class information (head teacher)
     """
     # Verify school exists
@@ -2167,6 +2180,8 @@ async def update_class_seating_chart(
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_active_user)
 ) -> Any:
+    _check_school_write_permission(db, current_user, school_id)
+) -> Any:
     """
     Update class seating chart
     """
@@ -2501,6 +2516,9 @@ async def create_teacher(
     """
     Create a new teacher record and automatically create a system user account
     """
+    if teacher_data.school_id:
+        _check_school_write_permission(db, current_user, teacher_data.school_id)
+
     # Check if school exists
     school = None
     if teacher_data.school_id:
@@ -2617,6 +2635,8 @@ async def update_teacher(
     Update teacher information
     """
     teacher = db.query(BaseTeacher).filter(BaseTeacher.id == teacher_id).first()
+    if teacher and teacher.school_id:
+        _check_school_write_permission(db, current_user, teacher.school_id)
 
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")

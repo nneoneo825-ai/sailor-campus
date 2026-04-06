@@ -47,9 +47,10 @@ async def get_roles(
 
     # Search by keyword (code, name)
     if keyword:
+        safe_keyword = keyword.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         query = query.filter(
-            (SysRole.code.like(f"%{keyword}%")) |
-            (SysRole.name.like(f"%{keyword}%"))
+            (SysRole.code.like(f"%{safe_keyword}%", escape='\\')) |
+            (SysRole.name.like(f"%{safe_keyword}%", escape='\\'))
         )
 
     total = query.count()
