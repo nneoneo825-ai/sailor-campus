@@ -262,7 +262,16 @@ async def wechat_login(
     """
     # 如果没有配置微信小程序参数，使用模拟登录（开发测试用）
     if not WECHAT_APPID or not WECHAT_SECRET:
+        import warnings
+        warnings.warn(
+            "⚠️ [严重警告] WECHAT_APPID/WECHAT_SECRET 未配置！当前运行在模拟模式。"
+            "模拟模式下 openid 基于 code 生成，每次登录 code 不同导致绑定失效。"
+            "请在 .env 中配置真实的微信小程序凭证后重启服务。",
+            RuntimeWarning,
+            stacklevel=2
+        )
         # 开发模式：根据 code 模拟不同的用户（每个code对应不同openid）
+        # 注意：此模式下 openid 每次都不同，仅用于本地调试，生产环境必须配置真实凭证
         mock_openid = f"mock_openid_{login_data.code[:10]}"
         
         # 查找已绑定的用户
@@ -421,6 +430,14 @@ async def wechat_bind(
     
     # 获取微信 openid
     if not WECHAT_APPID or not WECHAT_SECRET:
+        import warnings
+        warnings.warn(
+            "⚠️ [严重警告] WECHAT_APPID/WECHAT_SECRET 未配置！当前运行在模拟模式。"
+            "模拟模式下绑定关系不稳定，退出后需重新绑定。"
+            "请在 .env 中配置真实的微信小程序凭证后重启服务。",
+            RuntimeWarning,
+            stacklevel=2
+        )
         openid = f"mock_openid_{login_data.code[:10]}"
     else:
         url = f"https://api.weixin.qq.com/sns/jscode2session"

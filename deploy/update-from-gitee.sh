@@ -101,6 +101,27 @@ if [ -d "${TEMP_DIR}/backend" ]; then
     # 恢复配置文件
     [ -f "${BACKUP_DIR}/.env.bak" ] && mv "${BACKUP_DIR}/.env.bak" "${BACKEND_DIR}/.env"
 
+    # 关键配置安全检查：确保微信小程序凭证已填写（否则所有用户登录后会丢失绑定）
+    if [ -f "${BACKEND_DIR}/.env" ]; then
+        if ! grep -qE '^WECHAT_APPID=.+' "${BACKEND_DIR}/.env" || grep -qE '^WECHAT_APPID=\s*$' "${BACKEND_DIR}/.env"; then
+            log_warn "检测到 .env 中 WECHAT_APPID 未配置，正在从新代码补全..."
+            # 从仓库中的 .env 获取默认值（如果存在）
+            if [ -f "${TEMP_DIR}/backend/.env" ] && grep -qE '^WECHAT_APPID=[a-zA-Z]' "${TEMP_DIR}/backend/.env"; then
+                NEW_APPID=$(grep '^WECHAT_APPID=' "${TEMP_DIR}/backend/.env" | cut -d= -f2)
+                NEW_SECRET=$(grep '^WECHAT_SECRET=' "${TEMP_DIR}/backend/.env" | cut -d= -f2)
+                if [ -n "$NEW_APPID" ] && [ -n "$NEW_SECRET" ]; then
+                    sed -i "s/^WECHAT_APPID=.*/WECHAT_APPID=${NEW_APPID}/" "${BACKEND_DIR}/.env"
+                    sed -i "s/^WECHAT_SECRET=.*/WECHAT_SECRET=${NEW_SECRET}/" "${BACKEND_DIR}/.env"
+                    log_info "微信小程序配置已自动补全"
+                fi
+            else
+                log_error "警告：无法获取微信AppID，用户可能无法正常使用微信登录！请手动编辑 ${BACKEND_DIR}/.env"
+            fi
+        else
+            log_info "微信小程序配置检查通过 (WECHAT_APPID 已配置)"
+        fi
+    fi
+
     # 恢复虚拟环境
     if [ -d "${BACKUP_DIR}/venv.bak" ]; then
         mv "${BACKUP_DIR}/venv.bak" "${BACKEND_DIR}/venv"
