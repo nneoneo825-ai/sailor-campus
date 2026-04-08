@@ -11,6 +11,7 @@ Page({
     currentUrl: '',
     logoTapCount: 0
   },
+  _isLogging: false, // 同步变量，用于防止快速重复点击
 
   onLoad() {
     // 更新当前服务器地址显示
@@ -114,8 +115,9 @@ Page({
 
   // 微信登录
   async onWechatLogin() {
-    if (this.data.isLoading) return;
+    if (this.data.isLoading || this._isLogging) return;
 
+    this._isLogging = true;
     this.setData({ isLoading: true });
 
     try {
@@ -184,13 +186,14 @@ Page({
         });
       }
     } finally {
+      this._isLogging = false;
       this.setData({ isLoading: false });
     }
   },
 
   // 绑定账号
   async onBindAccount() {
-    if (this.data.isLoading) return;
+    if (this.data.isLoading || this._isLogging) return;
     if (!this.data.username || !this.data.password) {
       wx.showToast({
         title: '请填写完整信息',
@@ -199,6 +202,7 @@ Page({
       return;
     }
 
+    this._isLogging = true;
     this.setData({ isLoading: true });
 
     try {
@@ -241,6 +245,7 @@ Page({
         duration: 2000
       });
     } finally {
+      this._isLogging = false;
       this.setData({ isLoading: false });
     }
   },
