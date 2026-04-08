@@ -8,10 +8,8 @@ const USER_INFO_KEY = 'user_info';
 const API_URL_KEY = 'api_base_url';
 
 // 默认API地址（开发时请改为你电脑的局域网IP，如 192.168.x.x）
-const DEFAULT_API_URL = 'https://shishengapi.ai-sailor.com';
-globalData: {
-  apiBase: 'https://shishengapi.ai-sailor.com'
-}
+const DEFAULT_API_URL = '	https://eduquant.cszhxy.com';
+
 const api = {
   // 获取基础URL（支持动态设置）
   getBaseUrl() {

@@ -164,24 +164,10 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2);
-  border: none;
-}
-
-.wechat-login-btn::after {
-  border: none;
-}
-
-.wechat-login-btn[disabled] {
-  background: rgba(255, 255, 255, 0.6);
 }
 
 .wechat-login-btn.loading {
   opacity: 0.8;
-}
-
-.btn-icon {
-  font-size: 40rpx;
-  margin-right: 16rpx;
 }
 
 .bind-hint {

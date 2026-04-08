@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import SysUser
 from app.models.org import SysOrg
 from app.utils.auth import create_access_token, get_password_hash, verify_password, ACCESS_TOKEN_EXPIRE_MINUTES
-from app.utils.deps import get_current_active_user, authenticate_builtin_admin, is_builtin_admin
+from app.utils.deps import get_current_active_user, authenticate_builtin_admin, is_builtin_admin, require_permission
 from app.utils.log_helper import log_operation, MODULE_SYSTEM, ACTION_LOGIN
 from pydantic import BaseModel
 import requests
@@ -16,8 +16,8 @@ import os
 router = APIRouter()
 
 # 微信小程序配置
-WECHAT_APPID = os.getenv("WECHAT_APPID", "")
-WECHAT_SECRET = os.getenv("WECHAT_SECRET", "")
+WECHAT_APPID = os.getenv("WECHAT_APPID", "wxb5332521d96a3062")
+WECHAT_SECRET = os.getenv("WECHAT_SECRET", "7464d585e6adc9484990b6af53ea104b")
 
 
 def build_user_response(user: SysUser, db: Session) -> dict:
@@ -477,3 +477,46 @@ async def wechat_bind(
         "token_type": "bearer",
         "user": build_user_response(user, db)
     }
+
+
+@router.post("/admin/unbind-wechat/{user_id}")
+async def admin_unbind_wechat(
+    user_id: int,
+    request: Request,
+    current_user: SysUser = Depends(require_permission("system:user")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    管理员解绑用户微信
+    """
+
+    # 查找用户
+    user = db.query(SysUser).filter(SysUser.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+
+    if not user.wechat_openid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该用户未绑定微信"
+        )
+
+    # 清除微信绑定
+    user.wechat_openid = None
+    db.commit()
+
+    # 记录操作日志
+    log_operation(
+        db=db,
+        user=current_user,
+        module=MODULE_SYSTEM,
+        action="解绑微信",
+        description=f"管理员解除了用户 {user.real_name}({user.username}) 的微信绑定",
+        status="成功",
+        request=request
+    )
+
+    return {"message": "微信解绑成功"}

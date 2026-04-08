@@ -71,15 +71,12 @@
       <text class="tips-text">安全登录，数据同步</text>
     </view>
 
-    <button 
+    <view 
       class="wechat-login-btn {{isLoading ? 'loading' : ''}}" 
       bindtap="onWechatLogin"
-      disabled="{{isLoading}}"
     >
-      <text class="btn-icon">📱</text>
-      <text wx:if="{{!isLoading}}">微信一键登录</text>
-      <text wx:else>登录中...</text>
-    </button>
+      <text>📱 微信一键登录</text>
+    </view>
 
     <view class="bind-hint">
       <text>首次使用？</text>
