@@ -262,22 +262,17 @@ async def wechat_login(
     """
     # 如果没有配置微信小程序参数，使用模拟登录（开发测试用）
     if not WECHAT_APPID or not WECHAT_SECRET:
-        # 开发模式：根据 code 模拟不同的用户
+        # 开发模式：根据 code 模拟不同的用户（每个code对应不同openid）
         mock_openid = f"mock_openid_{login_data.code[:10]}"
         
-        # 查找或创建用户
+        # 查找已绑定的用户
         user = db.query(SysUser).filter(SysUser.wechat_openid == mock_openid).first()
         if not user:
-            # 查找默认测试用户
-            user = db.query(SysUser).filter(SysUser.username == "teacher1").first()
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="未找到关联用户，请先绑定账号"
-                )
-            # 更新用户的 openid
-            user.wechat_openid = mock_openid
-            db.commit()
+            # 开发模式下不自动绑定到默认用户，要求走正常绑定流程
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="未找到关联用户，请先绑定账号"
+            )
     else:
         # 生产模式：调用微信接口获取 openid
         url = f"https://api.weixin.qq.com/sns/jscode2session"

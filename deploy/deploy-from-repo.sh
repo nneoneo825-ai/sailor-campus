@@ -199,9 +199,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 # CORS - 请替换为你的实际域名
 ALLOWED_ORIGINS=["http://your-domain.com","https://your-domain.com"]
 
-# 微信小程序配置
-WECHAT_APPID=
-WECHAT_SECRET=
+# 微信小程序配置（必须填写，否则所有用户会登录到同一个测试账号！）
+WECHAT_APPID=wxb5332521d96a3062
+WECHAT_SECRET=7464d585e6adc9484990b6af53ea104b
 ENVEOF
     fi
 
