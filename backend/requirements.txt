@@ -22,7 +22,7 @@ email-validator==2.1.0
 
 # 工具库
 python-dotenv==1.0.0
-pytz==2023.3
+pytz==2026.6
 openpyxl==3.1.2
 pypinyin==0.51.0
 requests==2.31.0
