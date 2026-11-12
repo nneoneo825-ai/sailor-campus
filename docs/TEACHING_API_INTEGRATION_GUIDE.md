@@ -430,7 +430,7 @@ const TeachingProvincialReport: React.FC = () => {
 
 - [API接口规范](./api-specs.md) - 完整的API文档
 - [后端API代码](../backend/app/routes/teaching.py) - API实现细节
-- [任务1.2状态报告](./TASK_1_2_STATUS.md) - 整体进度
+- [任务1.2状态报告](./archive/TASK_1_2_STATUS.md) - 整体进度
 
 ---
 
