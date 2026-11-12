@@ -15,9 +15,9 @@ import os
 
 router = APIRouter()
 
-# 微信小程序配置
-WECHAT_APPID = os.getenv("WECHAT_APPID", "wxb5332521d96a3062")
-WECHAT_SECRET = os.getenv("WECHAT_SECRET", "7464d585e6adc9484990b6af53ea104b")
+# 微信小程序配置（仅从环境变量读取；未配置时 wechat-login 自动进入模拟模式）
+WECHAT_APPID = os.getenv("WECHAT_APPID", "")
+WECHAT_SECRET = os.getenv("WECHAT_SECRET", "")
 
 
 def build_user_response(user: SysUser, db: Session) -> dict:
