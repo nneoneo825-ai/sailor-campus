@@ -52,9 +52,9 @@ def client():
 @pytest.fixture()
 def test_user(db):
     """一个正常的、已改过初始密码、拥有 admin 角色的启用用户。"""
-    import main  # noqa: F401  触发权限与默认角色的初始化
+    import main  # noqa: F401  触发权限初始化（init_permissions 写入 32 个权限）
 
-    from app.models import SysRole
+    from app.models import SysRole, SysPermission
 
     user = db.query(SysUser).filter_by(username=TEST_USERNAME).first()
     if not user:
@@ -69,9 +69,17 @@ def test_user(db):
         db.commit()
         db.refresh(user)
 
-    # 赋予 admin 角色（main 导入时由 assign_default_permissions 创建并授予全部权限）
+    # 注意：应用本身不预置角色（生产库的角色由部署时脚本创建），
+    # 测试库是全新的，需要自行创建 admin 角色并授予全部权限
     admin_role = db.query(SysRole).filter_by(code="admin").first()
-    if admin_role and admin_role not in user.roles:
+    if not admin_role:
+        admin_role = SysRole(code="admin", name="管理员", data_scope=1)
+        admin_role.permissions = db.query(SysPermission).all()
+        db.add(admin_role)
+        db.commit()
+        db.refresh(admin_role)
+
+    if admin_role not in user.roles:
         user.roles.append(admin_role)
         db.commit()
     return user
