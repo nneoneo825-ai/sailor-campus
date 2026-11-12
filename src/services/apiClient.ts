@@ -55,20 +55,22 @@ class ApiClient {
     );
   }
 
+  // 响应拦截器已将 AxiosResponse 解包为 data，此处按业务类型断言；
+  // 使用 as unknown 中转以同时兼容 axios 1.x 新旧版本的拦截器类型推导
   public get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return this.instance.get(url, config);
+    return this.instance.get(url, config) as unknown as Promise<T>;
   }
 
   public post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return this.instance.post(url, data, config);
+    return this.instance.post(url, data, config) as unknown as Promise<T>;
   }
 
   public put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return this.instance.put(url, data, config);
+    return this.instance.put(url, data, config) as unknown as Promise<T>;
   }
 
   public delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return this.instance.delete(url, config);
+    return this.instance.delete(url, config) as unknown as Promise<T>;
   }
 }
 
