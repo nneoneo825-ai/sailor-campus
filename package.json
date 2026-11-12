@@ -24,7 +24,7 @@
     "@types/node": "^22.14.0",
     "@types/xlsx": "^0.0.35",
     "@vitejs/plugin-react": "^5.0.0",
-    "tailwindcss": "^4.2.1",
+    "tailwindcss": "^4.3.5",
     "typescript": "~5.8.2",
     "vite": "^6.4.6"
   }
