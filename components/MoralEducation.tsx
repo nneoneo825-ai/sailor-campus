@@ -53,80 +53,27 @@ import {
 } from '../src/utils/dateUtils';
 
 import { hasPermission } from '../src/utils/permission';
+import type {
+  ClassDetailRecord,
+  GradeDetailRecord,
+  SchoolDetailListRecord,
+  DormReportData,
+  DormDetailRecord,
+  ClassReportData,
+  FilterOptions,
+  IndicatorSubCategory,
+  IndicatorCategory,
+  DynamicClassData,
+  GradeReportData,
+  DynamicGradeData,
+  SchoolReportData
+} from '../src/types/moral';
 
-interface ClassDetailRecord {
-  id: number;
-  student: string;
-  majorCategory: string;
-  minorCategory: string;
-  reason: string;
-  content: string;
-  type: '加分' | '减分';
-  score: number;
-  time: string;
-}
 
-interface GradeDetailRecord {
-  id: number;
-  class: string;
-  majorCategory: string;
-  minorCategory: string;
-  reason: string;
-  content: string;
-  student: string;
-  type: '加分' | '减分';
-  score: number;
-  time: string;
-}
 
-interface SchoolDetailListRecord {
-    id: number;
-    grade: string;
-    class: string;
-    majorCategory: string;
-    minorCategory: string;
-    reason: string;
-    content: string;
-    student: string;
-    type: '加分' | '减分';
-    score: number;
-    time: string;
-}
 
 // 宿舍报表数据类型
-interface DormReportData {
-  grade: string;
-  class: string;
-  headTeacher: string;
-  mContent: number;
-  fContent: number;
-  content: number;
-  mNap: number;
-  fNap: number;
-  nap: number;
-  totalDed: number;
-  student_count: number;
-  perCapita: number;
-  rank: number;
-  score: number;
-  gradePerCapita: number;
-  gradeRank: number;
-}
 
-interface DormDetailRecord {
-  id: number;
-  grade: string;
-  class: string;
-  headTeacher: string;
-  student: string;
-  dormNo: string;
-  majorCategory: string;
-  minorCategory: string;
-  reason: string;
-  type: '加分' | '减分';
-  score: number;
-  time: string;
-}
 
 // --- Components ---
 
@@ -197,62 +144,8 @@ const MoralEducation: React.FC = () => {
 
 // ... existing code for ClassReport, GradeReport, SchoolReport, DormReport ...
 // 班级报表数据接口
-interface ClassReportData {
-  classInfo: {
-    id: number;
-    name: string;
-    headTeacher: string;
-    studentCount: number;
-  };
-  summary: {
-    totalScore: number;
-    bonusScore: number;
-    deductionScore: number;
-    checkItems: number;
-    rank: number;
-    trend: number;
-  };
-  fiveEducation: {
-    category: string;
-    score: number;
-    fullMark: number;
-  }[];
-  details: {
-    id: number;
-    item: string;
-    content: string;
-    score: number;
-    reason: string;
-    majorCategory: string;
-    minorCategory: string;
-    source?: string;
-    description?: string;
-  }[];
-  records: {
-    id: number;
-    student: string;
-    majorCategory: string;
-    minorCategory: string;
-    reason: string;
-    content: string;
-    type: '加分' | '减分';
-    score: number;
-    time: string;
-    source?: string;
-    description?: string;
-  }[];
-  trend: {
-    date: string;
-    score: number;
-  }[];
-}
 
 // 筛选选项接口
-interface FilterOptions {
-  schools: { id: number; name: string }[];
-  grades: { id: number; name: string }[];
-  classes: { id: number; name: string }[];
-}
 
 // 日期范围选择器组件
 interface DateRangePickerProps {
@@ -1788,85 +1681,14 @@ const ClassReport: React.FC = () => {
 // 2. Grade Report Component - 使用 API 数据
 
 // 指标子项接口
-interface IndicatorSubCategory {
-  name: string;
-  fieldKey: string;
-}
 
 // 指标大类接口
-interface IndicatorCategory {
-  name: string;
-  subCategories: IndicatorSubCategory[];
-}
 
 // 动态指标班级数据
-interface DynamicClassData {
-  class: string;
-  headTeacher: string;
-  totalDed: number;
-  perCapita: number;
-  rank: number;
-  [key: string]: string | number; // 动态字段
-}
 
-interface GradeReportData {
-  gradeName: string;
-  classes: DynamicClassData[];
-  records: {
-    id: number;
-    class: string;
-    majorCategory: string;
-    minorCategory: string;
-    reason: string;
-    content: string;
-    student: string;
-    type: '加分' | '减分';
-    score: number;
-    time: string;
-    source?: string;
-    description?: string;
-  }[];
-  reportPeriod: {
-    startDate: string;
-    endDate: string;
-  };
-  indicatorStructure?: IndicatorCategory[]; // 动态指标结构
-}
 
 // 动态指标年级数据
-interface DynamicGradeData {
-  grade: string;
-  totalDed: number;
-  perCapita: number;
-  rank: number;
-  studentCount: number;
-  [key: string]: string | number; // 动态字段
-}
 
-interface SchoolReportData {
-  schoolName: string;
-  grades: DynamicGradeData[];
-  records: {
-    id: number;
-    grade: string;
-    class: string;
-    majorCategory: string;
-    minorCategory: string;
-    reason: string;
-    content: string;
-    student: string;
-    type: '加分' | '减分';
-    score: number;
-    time: string;
-    source?: string;
-    description?: string;
-  }[];
-  reportPeriod: {
-    startDate: string;
-    endDate: string;
-  };
-  indicatorStructure?: IndicatorCategory[]; // 动态指标结构
-}
 
 const GradeReport: React.FC = () => {
     const [view, setView] = useState<'summary' | 'detail'>('summary');
