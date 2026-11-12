@@ -53,6 +53,8 @@ import {
 } from '../src/utils/dateUtils';
 
 import { hasPermission } from '../src/utils/permission';
+import { getRecentDaysRange, getLastWeekRange } from '../src/utils/dateUtils';
+import { extractSchools } from '../src/utils/orgUtils';
 import type {
   ClassDetailRecord,
   GradeDetailRecord,
@@ -368,73 +370,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChange }) =>
 };
 
 // 1. Class Report Component - 使用 API 数据
-
-// 获取上一周日期范围（上周一到上周日）
-const getLastWeekRange = () => {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0是周日，1是周一
-  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  
-  // 本周一
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() - daysSinceMonday);
-  
-  // 上周一
-  const lastMonday = new Date(thisMonday);
-  lastMonday.setDate(thisMonday.getDate() - 7);
-  
-  // 上周日
-  const lastSunday = new Date(thisMonday);
-  lastSunday.setDate(thisMonday.getDate() - 1);
-  
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  
-  return {
-    start: formatDate(lastMonday),
-    end: formatDate(lastSunday)
-  };
-};
-
-// 从组织树中提取学校列表
-const extractSchools = (orgTree: any[]): { id: number; name: string }[] => {
-  const schools: { id: number; name: string }[] = [];
-  
-  orgTree.forEach((group: any) => {
-    if (group.children) {
-      group.children.forEach((school: any) => {
-        if (school.type === 'school') {
-          schools.push({ id: school.id, name: school.name });
-        }
-      });
-    }
-  });
-  
-  return schools;
-};
-
-// 获取最近N天的日期范围
-const getRecentDaysRange = (days: number) => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - days + 1); // 包含今天
-
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  return {
-    start: formatDate(start),
-    end: formatDate(end)
-  };
-};
 
 const ClassReport: React.FC = () => {
   const [view, setView] = useState<'summary' | 'detail'>('summary');

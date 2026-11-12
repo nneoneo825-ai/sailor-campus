@@ -32,8 +32,7 @@ import {
   getBeijingLastWeekRange,
   getBeijingMonthRange,
   getBeijingLastMonthRange,
-  formatBeijingTime 
-} from '../src/utils/dateUtils';
+  formatBeijingTime, getRecentDaysRange } from '../src/utils/dateUtils';
 
 import { hasPermission } from '../src/utils/permission';
 
@@ -465,25 +464,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChange }) =>
       </div>
     </div>
   );
-};
-
-// 获取最近N天的日期范围
-const getRecentDaysRange = (days: number) => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - days + 1);
-
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  return {
-    start: formatDate(start),
-    end: formatDate(end)
-  };
 };
 
 // 学校多选下拉组件

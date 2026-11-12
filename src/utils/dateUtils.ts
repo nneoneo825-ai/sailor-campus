@@ -168,3 +168,50 @@ export function getBeijingLastMonthRange(): { start: string; end: string } {
     end: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-${daysInLastMonth}`
   };
 }
+
+// 获取最近N天的日期范围（包含今天）
+export function getRecentDaysRange(days: number): { start: string; end: string } {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - days + 1);
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    start: formatDate(start),
+    end: formatDate(end)
+  };
+}
+
+// 获取上周一到上周日的日期范围（本地时区）
+export function getLastWeekRange(): { start: string; end: string } {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0是周日，1是周一
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - daysSinceMonday);
+
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setDate(thisMonday.getDate() - 7);
+
+  const lastSunday = new Date(thisMonday);
+  lastSunday.setDate(thisMonday.getDate() - 1);
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    start: formatDate(lastMonday),
+    end: formatDate(lastSunday)
+  };
+}
