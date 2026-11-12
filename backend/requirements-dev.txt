@@ -1,0 +1,5 @@
+# 开发/测试依赖（在生产依赖之上追加）
+-r requirements.txt
+
+pytest==8.3.4
+httpx==0.28.1
