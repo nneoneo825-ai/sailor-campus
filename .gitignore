@@ -20,6 +20,11 @@ __pycache__/
 *.sql
 backend/backups/
 
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
 # Backup scripts output
 $backupFile
 
